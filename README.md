@@ -47,6 +47,63 @@ hidden-gems-backend/
 
 Features: Auth (register/login with JWT), Cafes (list/show), Reviews (list/create).
 
+
+API endpoints khớp với frontend
+Auth
+POST /api/auth/register
+POST /api/auth/login → trả access_token (JWT) + refresh_token
+POST /api/auth/refresh
+POST /api/auth/logout
+GET /api/auth/me (JWT)
+
+Users
+GET /api/users/:id
+PATCH /api/users/:id (self or admin)
+GET /api/users/:id/favorites / POST /api/users/:id/favorites
+
+Cafés
+GET /api/cafes (paging, sort, filter: category, rating, city, distance)
+GET /api/cafes/:id
+POST /api/cafes (role=owner/admin)
+PATCH /api/cafes/:id
+DELETE /api/cafes/:id (owner/admin)
+POST /api/cafes/:id/media (upload ảnh)
+
+Reviews
+GET /api/cafes/:id/reviews
+POST /api/cafes/:id/reviews
+PATCH /api/reviews/:id
+DELETE /api/reviews/:id (owner review or admin)
+
+Categories
+GET /api/categories
+POST /api/categories (admin)
+
+Search
+GET /api/search?q=…&lat=…&lng=… (full-text + geo)
+
+Admin
+GET /api/admin/dashboard/metrics
+PATCH /api/admin/users/:id/role …
+
+4) Luồng xử lý (MVC PHP thuần)
+public/index.php: nhận request → bootstrap/app.php (autoload, .env, kết nối DB, đăng ký route) → routes/api.php khớp URI → Controller gọi Service → Repository/Model (PDO) thao tác DB → trả JSON.
+Middlewares: AuthMiddleware kiểm tra JWT, AdminMiddleware check role.
+Validators: validate body/query (VD: Respect\Validation).
+
+5) Composer packages thường dùng
+vlucas/phpdotenv (đọc .env)
+firebase/php-jwt (JWT)
+monolog/monolog (logging)
+respect/validation (validate)
+guzzlehttp/guzzle (HTTP client khi cần)
+ramsey/uuid (UUID)
+(Nếu muốn router gọn): nikic/fast-route
+(Nếu muốn ORM nhẹ): illuminate/database (Eloquent độc lập) hoặc dùng PDO thuần.
+
+
+
+
 ## Setup
 ```bash
 composer install
