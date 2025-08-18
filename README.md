@@ -1,3 +1,48 @@
+hidden-gems-backend/
+├─ public/
+│  └─ index.php                # Front controller, vào app qua router
+├─ app/
+│  ├─ Controllers/
+│  │  ├─ AuthController.php
+│  │  ├─ UserController.php
+│  │  ├─ CafeController.php
+│  │  ├─ ReviewController.php
+│  │  ├─ CategoryController.php
+│  │  ├─ SearchController.php
+│  │  └─ UploadController.php
+│  ├─ Models/                  # ORM tự viết hoặc PDO models
+│  │  ├─ User.php ├─ Cafe.php ├─ Review.php ├─ Category.php └─ Media.php
+│  ├─ Services/                # Nghiệp vụ (AuthService, CafeService…)
+│  ├─ Repositories/            # Lớp truy vấn DB (UserRepository…)
+│  ├─ Middlewares/
+│  │  ├─ AuthMiddleware.php    # JWT/Session guard
+│  │  └─ AdminMiddleware.php
+│  ├─ Policies/                # Phân quyền (optional)
+│  ├─ Validators/              # Validate request
+│  ├─ Helpers/                 # Hàm dùng chung (slug, paging…)
+│  └─ Kernel.php               # Đăng ký middleware, providers
+├─ routes/
+│  └─ api.php                  # Khai báo tất cả endpoint REST
+├─ config/
+│  ├─ app.php ├─ database.php ├─ mail.php └─ filesystem.php
+├─ database/
+│  ├─ migrations/              # file tạo bảng
+│  ├─ seeders/                 # dữ liệu mẫu (categories, cafés…)
+│  └─ factories/               # generate dữ liệu test
+├─ storage/
+│  ├─ logs/                    # log app
+│  └─ uploads/                 # ảnh quán, avatar (nếu lưu local)
+├─ tests/
+│  ├─ Feature/ └─ Unit/
+├─ bootstrap/
+│  └─ app.php                  # load env, autoload, khởi tạo router, DB
+├─ vendor/                     # Composer
+├─ .env                        # biến môi trường (DB_*, JWT_SECRET, …)
+├─ composer.json               # dependency, autoload PSR-4
+├─ phpunit.xml                 # cấu hình test
+├─ Dockerfile / docker-compose.yml (optional)
+└─ README.md / docs/
+
 # Hidden Gems Backend (PHP MVC Minimal)
 
 Features: Auth (register/login with JWT), Cafes (list/show), Reviews (list/create).
