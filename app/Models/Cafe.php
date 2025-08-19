@@ -29,6 +29,22 @@ class Cafe
         return ['items'=>$items,'total'=>$count,'page'=>$page,'per_page'=>$per];
     }
 
+    public static function search(string $term, int $page=1, int $per=10): array
+    {
+        $offset = ($page-1)*$per;
+        $stmt = DB::pdo()->prepare('SELECT * FROM cafes WHERE name LIKE ? ORDER BY id DESC LIMIT ? OFFSET ?');
+        $like = '%'.$term.'%';
+        $stmt->bindValue(1,$like,\PDO::PARAM_STR);
+        $stmt->bindValue(2,$per,\PDO::PARAM_INT);
+        $stmt->bindValue(3,$offset,\PDO::PARAM_INT);
+        $stmt->execute();
+        $items = $stmt->fetchAll();
+        $countStmt = DB::pdo()->prepare('SELECT COUNT(*) FROM cafes WHERE name LIKE ?');
+        $countStmt->execute([$like]);
+        $count = (int)$countStmt->fetchColumn();
+        return ['items'=>$items,'total'=>$count,'page'=>$page,'per_page'=>$per];
+    }
+
     public static function find(int $id): ?array
     {
         $stmt = DB::pdo()->prepare('SELECT * FROM cafes WHERE id=?');

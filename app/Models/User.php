@@ -19,4 +19,24 @@ class User
         $stmt->execute([$name,$email,$passwordHash,$role]);
         return (int)DB::pdo()->lastInsertId();
     }
+
+    public static function saveRefreshToken(int $id, string $token): void
+    {
+        $stmt = DB::pdo()->prepare('UPDATE users SET refresh_token=? WHERE id=?');
+        $stmt->execute([$token,$id]);
+    }
+
+    public static function findByRefreshToken(string $token): ?array
+    {
+        $stmt = DB::pdo()->prepare('SELECT * FROM users WHERE refresh_token=? LIMIT 1');
+        $stmt->execute([$token]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    public static function all(): array
+    {
+        $stmt = DB::pdo()->query('SELECT id,name,email,role FROM users');
+        return $stmt->fetchAll();
+    }
 }

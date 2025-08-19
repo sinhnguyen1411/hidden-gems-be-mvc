@@ -9,16 +9,28 @@ class CafeController
 {
     public function index(Request $req, Response $res): void
     {
-        $page = max(1, (int)($req->query['page'] ?? 1));
-        $per = min(50, max(1, (int)($req->query['per_page'] ?? 10)));
-        $category = isset($req->query['category_id']) ? (int)$req->query['category_id'] : null;
+        $query = $req->getQueryParams();
+        $page = max(1, (int)($query['page'] ?? 1));
+        $per = min(50, max(1, (int)($query['per_page'] ?? 10)));
+        $category = isset($query['category_id']) ? (int)$query['category_id'] : null;
         $data = Cafe::paginate($page,$per,$category);
+        $res->json(['data'=>$data]);
+    }
+
+    public function search(Request $req, Response $res): void
+    {
+        $query = $req->getQueryParams();
+        $term = trim($query['q'] ?? '');
+        if ($term === '') { $res->json(['error'=>'Missing query'],422); return; }
+        $page = max(1, (int)($query['page'] ?? 1));
+        $per = min(50, max(1, (int)($query['per_page'] ?? 10)));
+        $data = Cafe::search($term,$page,$per);
         $res->json(['data'=>$data]);
     }
 
     public function show(Request $req, Response $res): void
     {
-        $id = (int)$req->params['id'];
+        $id = (int)$req->getAttribute('id');
         $cafe = Cafe::find($id);
         if (!$cafe) { $res->json(['error'=>'Not found'],404); return; }
         $res->json(['data'=>$cafe]);
