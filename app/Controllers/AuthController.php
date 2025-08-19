@@ -12,16 +12,18 @@ class AuthController
     public function register(Request $req, Response $res): void
     {
         $data = $req->getParsedBody();
+        $data['role'] = $data['role'] ?? 'customer';
         $errors = Validator::validate($data,[
             'name'=>'required',
             'email'=>'required|email',
-            'password'=>'required|min:6'
+            'password'=>'required|min:6',
+            'role'=>'in:admin,shop,customer'
         ]);
         if ($errors) { $res->json(['error'=>'Invalid input','details'=>$errors],422); return; }
         $email = strtolower($data['email']);
         if (User::findByEmail($email)) { $res->json(['error'=>'Email already in use'],409); return; }
         $hash = password_hash($data['password'], PASSWORD_BCRYPT);
-        $id = User::create($data['name'],$email,$hash);
+        $id = User::create($data['name'],$email,$hash,$data['role']);
         $res->json(['message'=>'Registered','user_id'=>$id],201);
     }
 
