@@ -22,6 +22,10 @@ class Validator
                     $min = (int)substr($rule,4);
                     if (strlen($value) < $min) { $errors[$field] = 'min'; break; }
                 }
+                if (str_starts_with($rule, 'in:')) {
+                    $allowed = explode(',', substr($rule, 3));
+                    if (!in_array($value, $allowed, true)) { $errors[$field] = 'in'; break; }
+                }
             }
         }
         return $errors;

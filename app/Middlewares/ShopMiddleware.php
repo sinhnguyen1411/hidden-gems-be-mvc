@@ -1,10 +1,10 @@
 <?php
 namespace App\Middlewares;
 
-class AdminMiddleware extends RoleMiddleware
+class ShopMiddleware extends RoleMiddleware
 {
     protected function roles(): array
     {
-        return ['admin'];
+        return ['shop'];
     }
 }
