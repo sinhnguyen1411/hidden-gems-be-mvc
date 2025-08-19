@@ -9,19 +9,22 @@ class ReviewController
 {
     public function list(Request $req, Response $res): void
     {
-        $cafeId = (int)$req->params['id'];
-        $page = max(1, (int)($req->query['page'] ?? 1));
-        $per = min(50, max(1, (int)($req->query['per_page'] ?? 10)));
+        $cafeId = (int)$req->getAttribute('id');
+        $query = $req->getQueryParams();
+        $page = max(1, (int)($query['page'] ?? 1));
+        $per = min(50, max(1, (int)($query['per_page'] ?? 10)));
         $data = Review::listByCafe($cafeId,$page,$per);
         $res->json(['data'=>$data]);
     }
 
     public function create(Request $req, Response $res): void
     {
-        $cafeId = (int)$req->params['id'];
-        $rating = (int)($req->body['rating'] ?? 0);
-        $content = trim($req->body['content'] ?? '');
-        $userId = (int)($req->user['uid'] ?? 0);
+        $cafeId = (int)$req->getAttribute('id');
+        $body = $req->getParsedBody();
+        $rating = (int)($body['rating'] ?? 0);
+        $content = trim($body['content'] ?? '');
+        $user = $req->getAttribute('user', []);
+        $userId = (int)($user['uid'] ?? 0);
         if ($rating < 1 || $rating > 5 || !$content) {
             $res->json(['error'=>'Invalid input'],422);
             return;
