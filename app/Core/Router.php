@@ -2,6 +2,7 @@
 namespace App\Core;
 
 use App\Middlewares\CorsMiddleware;
+use App\Core\Request;
 
 class Router
 {
@@ -10,7 +11,7 @@ class Router
     public function __construct()
     {
         if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
-            (new CorsMiddleware())->handle();
+            (new CorsMiddleware())->handle(Request::capture());
             http_response_code(204);
             exit;
         }
@@ -24,13 +25,13 @@ class Router
     public function dispatch(Request $req, Response $res): void
     {
         foreach ($this->routes as $r) {
-            if ($r['method'] !== $req->method) continue;
+            if ($r['method'] !== $req->getMethod()) continue;
             $pattern = '#^' . preg_replace('#\{([a-zA-Z_][a-zA-Z0-9_]*)\}#', '(?P<$1>[^/]+)', $r['path']) . '$#';
-            if (preg_match($pattern, $req->uri, $matches)) {
-                foreach ($matches as $k=>$v) if (!is_int($k)) $req->params[$k] = $v;
-                (new CorsMiddleware())->handle();
+            if (preg_match($pattern, $req->getUri(), $matches)) {
+                foreach ($matches as $k=>$v) if (!is_int($k)) $req = $req->withAttribute($k,$v);
+                $req = (new CorsMiddleware())->handle($req);
                 foreach ($r['middlewares'] as $m) {
-                    (new $m())->handle($req);
+                    $req = (new $m())->handle($req);
                 }
                 if (is_array($r['handler'])) {
                     [$class,$method] = $r['handler'];
@@ -42,6 +43,6 @@ class Router
                 return;
             }
         }
-        $res->json(['error'=>'Not found','path'=>$req->uri],404);
+        $res->json(['error'=>'Not found','path'=>$req->getUri()],404);
     }
 }

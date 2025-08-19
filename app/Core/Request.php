@@ -8,8 +8,7 @@ class Request
     public array $headers;
     public array $query;
     public array $body;
-    public array $params = [];
-    public array $user = [];
+    private array $attributes = [];
 
     public static function capture(): self
     {
@@ -22,4 +21,13 @@ class Request
         $req->body = json_decode($raw, true) ?: [];
         return $req;
     }
+
+    // PSR-7 like helpers
+    public function getMethod(): string { return $this->method; }
+    public function getUri(): string { return $this->uri; }
+    public function getHeaderLine(string $name): string { return $this->headers[$name] ?? ''; }
+    public function getQueryParams(): array { return $this->query; }
+    public function getParsedBody(): array { return $this->body; }
+    public function withAttribute(string $key, $value): self { $clone = clone $this; $clone->attributes[$key] = $value; return $clone; }
+    public function getAttribute(string $key, $default=null) { return $this->attributes[$key] ?? $default; }
 }

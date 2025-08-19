@@ -29,7 +29,7 @@ $users = [
     ['Carol','carol@example.com','password123','owner']
 ];
 foreach ($users as $u) {
-    $pdo->prepare("INSERT IGNORE INTO users(name,email,password,role) VALUES(?,?,?,?)")
+    $pdo->prepare("INSERT IGNORE INTO users(name,email,password_hash,role) VALUES(?,?,?,?)")
         ->execute([$u[0], $u[1], password_hash($u[2], PASSWORD_BCRYPT), $u[3]]);
 }
 
