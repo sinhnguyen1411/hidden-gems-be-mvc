@@ -64,16 +64,16 @@ GET /api/users/:id/favorites / POST /api/users/:id/favorites
 Cafés
 GET /api/cafes (paging, sort, filter: category, rating, city, distance)
 GET /api/cafes/:id
-POST /api/cafes (role=owner/admin)
+POST /api/cafes (role=shop/admin)
 PATCH /api/cafes/:id
-DELETE /api/cafes/:id (owner/admin)
+DELETE /api/cafes/:id (shop/admin)
 POST /api/cafes/:id/media (upload ảnh)
 
 Reviews
 GET /api/cafes/:id/reviews
 POST /api/cafes/:id/reviews
 PATCH /api/reviews/:id
-DELETE /api/reviews/:id (owner review or admin)
+DELETE /api/reviews/:id (shop review or admin)
 
 Categories
 GET /api/categories
