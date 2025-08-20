@@ -23,6 +23,11 @@ JWT tokens authenticate requests while middlewares guard access to specific reso
 - `RoleMiddleware` provides a base check for allowed roles.
 - `AdminMiddleware` and `ShopMiddleware` extend `RoleMiddleware` to restrict routes to admins or shop owners.
 
+### User Roles
+
+Accounts can be one of three roles: `admin`, `shop`, or `customer`.
+All registrations create `customer` accounts and only admins may promote users to `shop` or `admin`.
+
 Attach these middlewares to routes to enforce permissions:
 
 ```php
