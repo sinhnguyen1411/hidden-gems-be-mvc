@@ -6,6 +6,65 @@ Backend service for the Hidden Gems café discovery app. It provides a simple PH
 - PHP 8.2+
 - Composer
 - MySQL 8
+Hidden Gems is a community-driven platform for discovering and reviewing cafés.
+This repository provides the lightweight PHP MVC backend that powers its RESTful API.
+## API Overview
+- `POST /api/auth/register`
+- `POST /api/auth/login` → returns `{access_token, user}`
+- `POST /api/auth/refresh`
+- `GET /api/users` (admin only)
+- `GET /api/cafes?per_page=10&page=1`
+- `GET /api/cafes/search?q=term`
+- `GET /api/cafes/{id}`
+- `GET /api/cafes/{id}/reviews`
+- `POST /api/cafes/{id}/reviews`
+
+More endpoints are available in `routes/api.php`.
+
+## Authorization & Middlewares
+
+JWT tokens authenticate requests while middlewares guard access to specific resources.
+
+- `AuthMiddleware` extracts and verifies the token, attaching the user claims to the request.
+- `RoleMiddleware` provides a base check for allowed roles.
+- `AdminMiddleware` and `ShopMiddleware` extend `RoleMiddleware` to restrict routes to admins or shop owners.
+
+### User Roles
+
+Accounts can be one of three roles: `admin`, `shop`, or `customer`.
+All registrations create `customer` accounts and only admins may promote users to `shop` or `admin`.
+
+Attach these middlewares to routes to enforce permissions:
+
+```php
+$router->get('/admin/users', 'AdminController@index')
+       ->middleware([AuthMiddleware::class, AdminMiddleware::class]);
+```
+
+
+## Features
+- JWT authentication with register, login and refresh flows
+- User profiles with favorites
+- Café CRUD with media uploads and filtering by category, rating, city and distance
+- Review creation and moderation
+- Category management
+- Search combining full‑text and geo queries
+- Basic admin dashboard and user role management
+- Role-based access control via middlewares
+
+## Directory Structure
+```
+hidden-gems-backend/
+├── app/             # Controllers, services, models and helpers
+├── bootstrap/       # Framework bootstrap and service container
+├── config/          # Environment configuration
+├── database/        # Migrations, seeders and factories
+├── public/          # Front controller (index.php)
+├── routes/          # API routes
+├── tests/           # Minimal test runner and specs
+└── vendor/          # Composer dependencies
+```
+main
 
 ## Installation
 
