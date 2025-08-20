@@ -20,10 +20,7 @@ $pdo = DB::pdo();
 echo "🚀 Start seeding...\n";
 
 // Status
-$pdo->exec("INSERT INTO status(ten_trang_thai, nhom_trang_thai) VALUES
-    ('dang_cho','cua_hang'),
-    ('hoat_dong','cua_hang'),
-    ('dong_cua','cua_hang')");
+$pdo->exec("INSERT INTO status(ten_trang_thai, nhom_trang_thai) VALUES\n    ('dang_cho','cua_hang'),\n    ('hoat_dong','cua_hang'),\n    ('dong_cua','cua_hang')");
 
 // Users
 $users = [
@@ -95,3 +92,4 @@ $pdo->prepare("INSERT INTO khuyen_mai_cua_hang(id_khuyen_mai,id_cua_hang) VALUES
     ->execute([$promoId,$storeId]);
 
 echo "✅ Seeding done!\n";
+
