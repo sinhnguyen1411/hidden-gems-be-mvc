@@ -22,14 +22,16 @@ class User
 
     public static function saveRefreshToken(int $id_user, string $token): void
     {
+        $hash = hash('sha256', $token);
         $stmt = DB::pdo()->prepare('UPDATE users SET refresh_token=? WHERE id_user=?');
-        $stmt->execute([$token,$id_user]);
+        $stmt->execute([$hash,$id_user]);
     }
 
     public static function findByRefreshToken(string $token): ?array
     {
+        $hash = hash('sha256', $token);
         $stmt = DB::pdo()->prepare('SELECT * FROM users WHERE refresh_token=? LIMIT 1');
-        $stmt->execute([$token]);
+        $stmt->execute([$hash]);
         $row = $stmt->fetch();
         return $row ?: null;
     }
