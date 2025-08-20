@@ -2,6 +2,36 @@
 
 Hidden Gems is a community-driven platform for discovering and reviewing cafés.
 This repository provides the lightweight PHP MVC backend that powers its RESTful API.
+## API Overview
+- `POST /api/auth/register`
+- `POST /api/auth/login` → returns `{access_token, user}`
+- `POST /api/auth/refresh`
+- `POST /api/auth/logout`
+- `GET /api/auth/me`
+- `GET /api/cafes?per_page=10&page=1`
+- `GET /api/cafes/{id}`
+- `POST /api/cafes/{id}/reviews`
+- `GET /api/users/{id}`
+- `PATCH /api/users/{id}`
+- `GET /api/categories`
+
+More endpoints are available in `routes/api.php`.
+
+## Authorization & Middlewares
+
+JWT tokens authenticate requests while middlewares guard access to specific resources.
+
+- `AuthMiddleware` extracts and verifies the token, attaching the user claims to the request.
+- `RoleMiddleware` provides a base check for allowed roles.
+- `AdminMiddleware` and `ShopMiddleware` extend `RoleMiddleware` to restrict routes to admins or shop owners.
+
+Attach these middlewares to routes to enforce permissions:
+
+```php
+$router->get('/admin/users', 'AdminController@index')
+       ->middleware([AuthMiddleware::class, AdminMiddleware::class]);
+```
+
 
 ## Features
 - JWT authentication with register, login, refresh and logout flows
@@ -50,35 +80,4 @@ Run the lightweight test suite:
 ```bash
 composer test
 ```
-
-## API Overview
-- `POST /api/auth/register`
-- `POST /api/auth/login` → returns `{access_token, user}`
-- `POST /api/auth/refresh`
-- `POST /api/auth/logout`
-- `GET /api/auth/me`
-- `GET /api/cafes?per_page=10&page=1`
-- `GET /api/cafes/{id}`
-- `POST /api/cafes/{id}/reviews`
-- `GET /api/users/{id}`
-- `PATCH /api/users/{id}`
-- `GET /api/categories`
-
-More endpoints are available in `routes/api.php`.
-
-## Authorization & Middlewares
-
-JWT tokens authenticate requests while middlewares guard access to specific resources.
-
-- `AuthMiddleware` extracts and verifies the token, attaching the user claims to the request.
-- `RoleMiddleware` provides a base check for allowed roles.
-- `AdminMiddleware` and `ShopMiddleware` extend `RoleMiddleware` to restrict routes to admins or shop owners.
-
-Attach these middlewares to routes to enforce permissions:
-
-```php
-$router->get('/admin/users', 'AdminController@index')
-       ->middleware([AuthMiddleware::class, AdminMiddleware::class]);
-```
-
 
