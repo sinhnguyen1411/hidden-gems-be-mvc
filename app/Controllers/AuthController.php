@@ -21,19 +21,8 @@ class AuthController
         $email = strtolower($data['email']);
         if (User::findByEmail($email)) { $res->json(['error'=>'Email already in use'],409); return; }
         $hash = password_hash($data['password'], PASSWORD_BCRYPT);
-
-        $id = User::create($data['ten_dang_nhap'],$email,$hash,'customer');
-
-        $id = User::create($data['ten_dang_nhap'],$email,$hash,'customer');
-
-        $id = User::create($data['ten_dang_nhap'],$email,$hash,'customer');
-
-        codex/review-code
-        $id = User::create($data['ten_dang_nhap'],$email,$hash,'customer');
-
-        $id = User::create($data['ten_dang_nhap'],$email,$hash,'user');
-
-        $res->json(['message'=>'Registered','user_id'=>$id],201);
+        $id = User::create($data['ten_dang_nhap'], $email, $hash, 'customer');
+        $res->json(['message' => 'Registered', 'user_id' => $id], 201);
     }
 
     public function login(Request $req, Response $res): void
