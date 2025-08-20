@@ -12,8 +12,8 @@ CREATE TABLE status (
 ) ENGINE=InnoDB;
 
 -- 1) NGƯỜI DÙNG
-CREATE TABLE nguoi_dung (
-  id_nguoi_dung INT PRIMARY KEY AUTO_INCREMENT,
+CREATE TABLE users (
+  id_user INT PRIMARY KEY AUTO_INCREMENT,
   ten_dang_nhap VARCHAR(255) NOT NULL,
   email VARCHAR(255) NOT NULL,
   mat_khau_ma_hoa VARCHAR(255) NOT NULL,
@@ -47,7 +47,7 @@ CREATE TABLE cua_hang (
   id_trang_thai INT,
   id_vi_tri INT,
   ngay_tao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT fk_store_owner   FOREIGN KEY (id_chu_so_huu) REFERENCES nguoi_dung(id_nguoi_dung) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_store_owner   FOREIGN KEY (id_chu_so_huu) REFERENCES users(id_user) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT fk_store_status  FOREIGN KEY (id_trang_thai) REFERENCES status(id_trang_thai)       ON DELETE SET NULL  ON UPDATE CASCADE,
   CONSTRAINT fk_store_location FOREIGN KEY (id_vi_tri)    REFERENCES vi_tri(id_vi_tri)           ON DELETE SET NULL  ON UPDATE CASCADE,
   CONSTRAINT chk_store_avg CHECK (diem_danh_gia_trung_binh >= 0.0 AND diem_danh_gia_trung_binh <= 5.0)
@@ -56,12 +56,12 @@ CREATE TABLE cua_hang (
 -- 4) ĐÁNH GIÁ
 CREATE TABLE danh_gia (
   id_danh_gia INT PRIMARY KEY AUTO_INCREMENT,
-  id_nguoi_dung INT NOT NULL,
+  id_user INT NOT NULL,
   id_cua_hang INT NOT NULL,
   diem_danh_gia INT NOT NULL,
   binh_luan TEXT,
   thoi_gian_tao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT fk_review_user  FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id_nguoi_dung) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_review_user  FOREIGN KEY (id_user) REFERENCES users(id_user) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT fk_review_store FOREIGN KEY (id_cua_hang)   REFERENCES cua_hang(id_cua_hang)     ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT chk_rating_range CHECK (diem_danh_gia BETWEEN 1 AND 5),
   UNIQUE KEY uq_review_user_store (id_nguoi_dung, id_cua_hang)
@@ -88,8 +88,8 @@ CREATE TABLE yeu_thich (
   id_nguoi_dung INT NOT NULL,
   id_cua_hang INT NOT NULL,
   thoi_gian_thich DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (id_nguoi_dung, id_cua_hang),
-  CONSTRAINT fk_fav_user  FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id_nguoi_dung) ON DELETE CASCADE ON UPDATE CASCADE,
+  PRIMARY KEY (id_user, id_cua_hang),
+  CONSTRAINT fk_fav_user  FOREIGN KEY (id_user) REFERENCES users(id_user) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT fk_fav_store FOREIGN KEY (id_cua_hang)   REFERENCES cua_hang(id_cua_hang)     ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
@@ -97,33 +97,33 @@ CREATE TABLE yeu_thich (
 CREATE TABLE hinh_anh (
   id_anh INT PRIMARY KEY AUTO_INCREMENT,
   id_cua_hang INT NOT NULL,
-  id_nguoi_dung INT,
+  id_user INT,
   url_anh TEXT NOT NULL,
   is_anh_dai_dien BOOLEAN NOT NULL DEFAULT FALSE,
   thoi_gian_tai_len DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_img_store FOREIGN KEY (id_cua_hang)   REFERENCES cua_hang(id_cua_hang)     ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT fk_img_user  FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id_nguoi_dung) ON DELETE SET NULL ON UPDATE CASCADE
+  CONSTRAINT fk_img_user  FOREIGN KEY (id_user) REFERENCES users(id_user) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 -- 9) BLOG
 CREATE TABLE blog (
   id_blog INT PRIMARY KEY AUTO_INCREMENT,
-  id_nguoi_dung INT NOT NULL,
+  id_user INT NOT NULL,
   tieu_de VARCHAR(255) NOT NULL,
   noi_dung TEXT,
   thoi_gian_tao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT fk_blog_user FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id_nguoi_dung) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT fk_blog_user FOREIGN KEY (id_user) REFERENCES users(id_user) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 -- 10) THANH TOÁN
 CREATE TABLE thanh_toan (
   id_thanh_toan INT PRIMARY KEY AUTO_INCREMENT,
-  id_nguoi_dung INT NOT NULL,
+  id_user INT NOT NULL,
   so_tien DECIMAL(10,2) NOT NULL CHECK (so_tien >= 0),
   phuong_thuc_thanh_toan VARCHAR(50) NOT NULL,
   trang_thai VARCHAR(50) NOT NULL,
   thoi_gian_thanh_toan DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT fk_payment_user FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id_nguoi_dung) ON DELETE RESTRICT ON UPDATE CASCADE
+  CONSTRAINT fk_payment_user FOREIGN KEY (id_user) REFERENCES users(id_user) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 -- 11) VOUCHER
@@ -149,10 +149,10 @@ CREATE TABLE so_thich (
 
 -- 13) QUAN HỆ SỞ THÍCH NGƯỜI DÙNG
 CREATE TABLE nguoi_dung_so_thich (
-  id_nguoi_dung INT NOT NULL,
+  id_user INT NOT NULL,
   id_so_thich INT NOT NULL,
-  PRIMARY KEY (id_nguoi_dung, id_so_thich),
-  CONSTRAINT fk_ui_user     FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id_nguoi_dung) ON DELETE CASCADE ON UPDATE CASCADE,
+  PRIMARY KEY (id_user, id_so_thich),
+  CONSTRAINT fk_ui_user     FOREIGN KEY (id_user) REFERENCES users(id_user) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT fk_ui_interest FOREIGN KEY (id_so_thich)   REFERENCES so_thich(id_so_thich)     ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
