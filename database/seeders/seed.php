@@ -20,10 +20,7 @@ $pdo = DB::pdo();
 echo "🚀 Start seeding...\n";
 
 // Status
-$pdo->exec("INSERT INTO status(ten_trang_thai, nhom_trang_thai) VALUES
-    ('dang_cho','cua_hang'),
-    ('hoat_dong','cua_hang'),
-    ('dong_cua','cua_hang')");
+$pdo->exec("INSERT INTO status(ten_trang_thai, nhom_trang_thai) VALUES\n    ('dang_cho','cua_hang'),\n    ('hoat_dong','cua_hang'),\n    ('dong_cua','cua_hang')");
 
 // Users
 $users = [
@@ -31,13 +28,11 @@ $users = [
     ['alice','alice@example.com','secret123','Alice','user','0987654321']
 ];
 foreach ($users as $u) {
-codex/anh-gia-du-an-kjabc3
     $pdo->prepare("INSERT INTO nguoi_dung(ten_dang_nhap,email,mat_khau_ma_hoa,ho_va_ten,vai_tro,so_dien_thoai) VALUES (?,?,?,?,?,?)")
         ->execute([$u[0],$u[1],password_hash($u[2],PASSWORD_BCRYPT),$u[3],$u[4],$u[5]]);
 
     $pdo->prepare("INSERT IGNORE INTO users(name,email,password_hash,role) VALUES(?,?,?,?)")
         ->execute([$u[0], $u[1], password_hash($u[2], PASSWORD_BCRYPT), $u[3]]);
-main
 }
 
 // Location
@@ -97,3 +92,4 @@ $pdo->prepare("INSERT INTO khuyen_mai_cua_hang(id_khuyen_mai,id_cua_hang) VALUES
     ->execute([$promoId,$storeId]);
 
 echo "✅ Seeding done!\n";
+
