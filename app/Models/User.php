@@ -13,8 +13,12 @@ class User
         return $row ?: null;
     }
 
-    public static function create(string $ten_dang_nhap, string $email, string $mat_khau_ma_hoa, string $vai_tro='user', string $ho_va_ten=null, string $so_dien_thoai=null): int
+    public static function create(string $ten_dang_nhap, string $email, string $mat_khau_ma_hoa, string $vai_tro='customer', string $ho_va_ten=null, string $so_dien_thoai=null): int
     {
+        $allowed = ['admin','shop','customer'];
+        if (!in_array($vai_tro, $allowed, true)) {
+            $vai_tro = 'customer';
+        }
         $stmt = DB::pdo()->prepare('INSERT INTO users(ten_dang_nhap, email, mat_khau_ma_hoa, vai_tro, ho_va_ten, so_dien_thoai) VALUES(?,?,?,?,?,?)');
         $stmt->execute([$ten_dang_nhap, $email, $mat_khau_ma_hoa, $vai_tro, $ho_va_ten, $so_dien_thoai]);
         return (int)DB::pdo()->lastInsertId();
@@ -22,14 +26,16 @@ class User
 
     public static function saveRefreshToken(int $id_user, string $token): void
     {
+        $hash = hash('sha256', $token);
         $stmt = DB::pdo()->prepare('UPDATE users SET refresh_token=? WHERE id_user=?');
-        $stmt->execute([$token,$id_user]);
+        $stmt->execute([$hash,$id_user]);
     }
 
     public static function findByRefreshToken(string $token): ?array
     {
+        $hash = hash('sha256', $token);
         $stmt = DB::pdo()->prepare('SELECT * FROM users WHERE refresh_token=? LIMIT 1');
-        $stmt->execute([$token]);
+        $stmt->execute([$hash]);
         $row = $stmt->fetch();
         return $row ?: null;
     }

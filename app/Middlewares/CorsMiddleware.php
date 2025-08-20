@@ -8,7 +8,10 @@ class CorsMiddleware implements Middleware
 {
     public function handle(Request $request): Request
     {
-        header('Access-Control-Allow-Origin: *');
+        $origin = $_ENV['CORS_ALLOWED_ORIGIN'] ?? '';
+        if ($origin !== '') {
+            header('Access-Control-Allow-Origin: ' . $origin);
+        }
         header('Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS');
         header('Access-Control-Allow-Headers: Content-Type, Authorization');
         return $request;
