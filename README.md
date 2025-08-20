@@ -1,14 +1,5 @@
 # Hidden Gems Backend
-
 Backend service for the Hidden Gems café discovery app. It provides a simple PHP MVC API that supports authentication, café listings, and reviews.
-
-
-## Requirements
-- PHP 8.2+
-- Composer
-- MySQL 8
-
-
 ## Requirements
 - PHP 8.2+
 - Composer
