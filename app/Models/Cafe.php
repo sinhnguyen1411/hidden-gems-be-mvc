@@ -18,14 +18,18 @@ class Cafe
             $stmt->bindValue(2,$per,\PDO::PARAM_INT);
             $stmt->bindValue(3,$offset,\PDO::PARAM_INT);
             $stmt->execute();
+            $items = $stmt->fetchAll();
+            $countStmt = DB::pdo()->prepare('SELECT COUNT(*) FROM cua_hang c JOIN cua_hang_chuyen_muc cc ON cc.id_cua_hang=c.id_cua_hang WHERE cc.id_chuyen_muc=?');
+            $countStmt->execute([$categoryId]);
+            $count = (int)$countStmt->fetchColumn();
         } else {
             $stmt = DB::pdo()->prepare('SELECT * FROM cua_hang ORDER BY id_cua_hang DESC LIMIT ? OFFSET ?');
             $stmt->bindValue(1,$per,\PDO::PARAM_INT);
             $stmt->bindValue(2,$offset,\PDO::PARAM_INT);
             $stmt->execute();
+            $items = $stmt->fetchAll();
+            $count = (int)DB::pdo()->query('SELECT COUNT(*) FROM cua_hang')->fetchColumn();
         }
-        $items = $stmt->fetchAll();
-        $count = (int)DB::pdo()->query('SELECT COUNT(*) FROM cua_hang')->fetchColumn();
         return ['items'=>$items,'total'=>$count,'page'=>$page,'per_page'=>$per];
     }
 
