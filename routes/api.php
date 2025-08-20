@@ -9,6 +9,10 @@ use App\Middlewares\AdminMiddleware;
 /** @var Router $router */
 $router = $app['router'];
 
+$router->add('GET','/',function($req,$res){
+    $res->json(['message'=>'Hidden Gems API']);
+});
+
 $router->add('POST','/api/auth/register',[AuthController::class,'register']);
 $router->add('POST','/api/auth/login',[AuthController::class,'login']);
 $router->add('POST','/api/auth/refresh',[AuthController::class,'refresh']);
