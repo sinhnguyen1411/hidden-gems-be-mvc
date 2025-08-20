@@ -6,14 +6,12 @@ This repository provides the lightweight PHP MVC backend that powers its RESTful
 - `POST /api/auth/register`
 - `POST /api/auth/login` → returns `{access_token, user}`
 - `POST /api/auth/refresh`
-- `POST /api/auth/logout`
-- `GET /api/auth/me`
+- `GET /api/users` (admin only)
 - `GET /api/cafes?per_page=10&page=1`
+- `GET /api/cafes/search?q=term`
 - `GET /api/cafes/{id}`
+- `GET /api/cafes/{id}/reviews`
 - `POST /api/cafes/{id}/reviews`
-- `GET /api/users/{id}`
-- `PATCH /api/users/{id}`
-- `GET /api/categories`
 
 More endpoints are available in `routes/api.php`.
 
@@ -34,7 +32,7 @@ $router->get('/admin/users', 'AdminController@index')
 
 
 ## Features
-- JWT authentication with register, login, refresh and logout flows
+- JWT authentication with register, login and refresh flows
 - User profiles with favorites
 - Café CRUD with media uploads and filtering by category, rating, city and distance
 - Review creation and moderation
