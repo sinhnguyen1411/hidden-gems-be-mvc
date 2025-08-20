@@ -5,6 +5,13 @@ use App\Core\DB;
 
 class User
 {
+    public static function findByUsername(string $ten_dang_nhap): ?array
+    {
+        $stmt = DB::pdo()->prepare('SELECT * FROM users WHERE ten_dang_nhap = ? LIMIT 1');
+        $stmt->execute([$ten_dang_nhap]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
     public static function findByEmail(string $email): ?array
     {
         $stmt = DB::pdo()->prepare('SELECT * FROM users WHERE email = ? LIMIT 1');

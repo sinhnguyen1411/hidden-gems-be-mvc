@@ -21,16 +21,22 @@ class AuthController
         $email = strtolower($data['email']);
         if (User::findByEmail($email)) { $res->json(['error'=>'Email already in use'],409); return; }
         $hash = password_hash($data['password'], PASSWORD_BCRYPT);
-        $id = User::create($data['ten_dang_nhap'], $email, $hash, 'customer');
+    $ho_va_ten = $data['ho_va_ten'] ?? null;
+    $so_dien_thoai = $data['so_dien_thoai'] ?? null;
+    $id = User::create($data['ten_dang_nhap'], $email, $hash, 'customer', $ho_va_ten, $so_dien_thoai);
         $res->json(['message' => 'Registered', 'user_id' => $id], 201);
     }
 
     public function login(Request $req, Response $res): void
     {
         $data = $req->getParsedBody();
-        $email = strtolower(trim($data['email'] ?? ''));
         $password = $data['password'] ?? '';
-        $user = $email ? User::findByEmail($email) : null;
+        $user = null;
+        if (!empty($data['email'])) {
+            $user = User::findByEmail(strtolower(trim($data['email'])));
+        } elseif (!empty($data['ten_dang_nhap'])) {
+            $user = User::findByUsername($data['ten_dang_nhap']);
+        }
         if (!$user || !password_verify($password, $user['mat_khau_ma_hoa'])) {
             $res->json(['error'=>'Invalid credentials'],401); return;
         }

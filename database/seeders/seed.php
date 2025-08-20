@@ -25,7 +25,7 @@ $pdo->exec("INSERT INTO status(ten_trang_thai, nhom_trang_thai) VALUES\n    ('da
 // Users
 $users = [
     ['admin','admin@example.com','admin123','Admin User','admin','0123456789'],
-    ['alice','alice@example.com','secret123','Alice','customer','0987654321']
+    ['alice123','alice@example.com','secret123','Alice','customer','0987654321']
 ];
 foreach ($users as $u) {
     $pdo->prepare("INSERT INTO users(ten_dang_nhap,email,mat_khau_ma_hoa,ho_va_ten,vai_tro,so_dien_thoai) VALUES (?,?,?,?,?,?)")
