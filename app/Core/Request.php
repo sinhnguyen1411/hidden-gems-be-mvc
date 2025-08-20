@@ -14,7 +14,11 @@ class Request
     {
         $req = new self();
         $req->method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-        $req->uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+        $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+        if ($uri === '/index.php' || str_starts_with($uri, '/index.php/')) {
+            $uri = substr($uri, strlen('/index.php')) ?: '/';
+        }
+        $req->uri = $uri;
         $req->headers = function_exists('getallheaders') ? getallheaders() : [];
         $req->query = $_GET ?? [];
         $raw = file_get_contents('php://input');
