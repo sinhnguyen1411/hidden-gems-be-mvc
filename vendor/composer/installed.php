@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'hidden-gems/backend',
-        'pretty_version' => '1.0.0+no-version-set',
-        'version' => '1.0.0.0',
-        'reference' => null,
+        'pretty_version' => 'dev-main',
+        'version' => 'dev-main',
+        'reference' => 'c732b1d18e002ed53f6ac2b0549100e82311969d',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -29,9 +29,9 @@
             'dev_requirement' => false,
         ),
         'hidden-gems/backend' => array(
-            'pretty_version' => '1.0.0+no-version-set',
-            'version' => '1.0.0.0',
-            'reference' => null,
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'reference' => 'c732b1d18e002ed53f6ac2b0549100e82311969d',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
