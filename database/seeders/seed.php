@@ -28,11 +28,8 @@ $users = [
     ['alice','alice@example.com','secret123','Alice','user','0987654321']
 ];
 foreach ($users as $u) {
-    $pdo->prepare("INSERT INTO nguoi_dung(ten_dang_nhap,email,mat_khau_ma_hoa,ho_va_ten,vai_tro,so_dien_thoai) VALUES (?,?,?,?,?,?)")
+    $pdo->prepare("INSERT INTO users(ten_dang_nhap,email,mat_khau_ma_hoa,ho_va_ten,vai_tro,so_dien_thoai) VALUES (?,?,?,?,?,?)")
         ->execute([$u[0],$u[1],password_hash($u[2],PASSWORD_BCRYPT),$u[3],$u[4],$u[5]]);
-
-    $pdo->prepare("INSERT IGNORE INTO users(name,email,password_hash,role) VALUES(?,?,?,?)")
-        ->execute([$u[0], $u[1], password_hash($u[2], PASSWORD_BCRYPT), $u[3]]);
 }
 
 // Location
@@ -53,11 +50,11 @@ $pdo->prepare("INSERT INTO cua_hang_chuyen_muc(id_cua_hang,id_chuyen_muc) VALUES
     ->execute([$storeId,1]);
 
 // Review
-$pdo->prepare("INSERT INTO danh_gia(id_nguoi_dung,id_cua_hang,diem_danh_gia,binh_luan) VALUES (?,?,?,?)")
+$pdo->prepare("INSERT INTO danh_gia(id_user,id_cua_hang,diem_danh_gia,binh_luan) VALUES (?,?,?,?)")
     ->execute([1,$storeId,5,'Tuyet voi']);
 
 // Favorite
-$pdo->prepare("INSERT INTO yeu_thich(id_nguoi_dung,id_cua_hang) VALUES (?,?)")
+$pdo->prepare("INSERT INTO yeu_thich(id_user,id_cua_hang) VALUES (?,?)")
     ->execute([2,$storeId]);
 
 // Image
@@ -65,11 +62,11 @@ $pdo->prepare("INSERT INTO hinh_anh(id_cua_hang,url_anh,is_anh_dai_dien) VALUES 
     ->execute([$storeId,'https://example.com/image.jpg',1]);
 
 // Blog
-$pdo->prepare("INSERT INTO blog(id_nguoi_dung,tieu_de,noi_dung) VALUES (?,?,?)")
+$pdo->prepare("INSERT INTO blog(id_user,tieu_de,noi_dung) VALUES (?,?,?)")
     ->execute([1,'Chao mung','Bai viet dau tien']);
 
 // Payment
-$pdo->prepare("INSERT INTO thanh_toan(id_nguoi_dung,so_tien,phuong_thuc_thanh_toan,trang_thai) VALUES (?,?,?,?)")
+$pdo->prepare("INSERT INTO thanh_toan(id_user,so_tien,phuong_thuc_thanh_toan,trang_thai) VALUES (?,?,?,?)")
     ->execute([2,100000,'cash','completed']);
 
 // Voucher
@@ -81,7 +78,7 @@ $pdo->prepare("INSERT INTO voucher_cua_hang(id_voucher,id_cua_hang) VALUES (?,?)
 
 // Interest
 $pdo->exec("INSERT INTO so_thich(ten_so_thich) VALUES ('Cafe'),('Book')");
-$pdo->prepare("INSERT INTO nguoi_dung_so_thich(id_nguoi_dung,id_so_thich) VALUES (?,?)")
+$pdo->prepare("INSERT INTO nguoi_dung_so_thich(id_user,id_so_thich) VALUES (?,?)")
     ->execute([2,1]);
 
 // Promotion
