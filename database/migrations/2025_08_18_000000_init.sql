@@ -19,6 +19,7 @@ CREATE TABLE users (
   mat_khau_ma_hoa VARCHAR(255) NOT NULL,
   ho_va_ten VARCHAR(255),
   vai_tro VARCHAR(50) NOT NULL DEFAULT 'user',
+  refresh_token VARCHAR(255),
   so_dien_thoai VARCHAR(20),
   ngay_tham_gia DATE NOT NULL DEFAULT (CURRENT_DATE),
   UNIQUE KEY uq_user_email (email),
@@ -64,7 +65,7 @@ CREATE TABLE danh_gia (
   CONSTRAINT fk_review_user  FOREIGN KEY (id_user) REFERENCES users(id_user) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT fk_review_store FOREIGN KEY (id_cua_hang)   REFERENCES cua_hang(id_cua_hang)     ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT chk_rating_range CHECK (diem_danh_gia BETWEEN 1 AND 5),
-  UNIQUE KEY uq_review_user_store (id_nguoi_dung, id_cua_hang)
+  UNIQUE KEY uq_review_user_store (id_user, id_cua_hang)
 ) ENGINE=InnoDB;
 
 -- 5) CHUYÊN MỤC
@@ -85,7 +86,7 @@ CREATE TABLE cua_hang_chuyen_muc (
 
 -- 7) YÊU THÍCH
 CREATE TABLE yeu_thich (
-  id_nguoi_dung INT NOT NULL,
+  id_user INT NOT NULL,
   id_cua_hang INT NOT NULL,
   thoi_gian_thich DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id_user, id_cua_hang),

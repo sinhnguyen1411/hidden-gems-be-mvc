@@ -3,6 +3,7 @@ namespace App\Middlewares;
 
 use App\Core\Middleware;
 use App\Core\Request;
+use App\Core\HttpException;
 
 abstract class RoleMiddleware implements Middleware
 {
@@ -17,9 +18,7 @@ abstract class RoleMiddleware implements Middleware
     {
         $user = $request->getAttribute('user', []);
         if (!in_array($user['role'] ?? '', $this->roles(), true)) {
-            http_response_code(403);
-            echo json_encode(['error' => 'Forbidden']);
-            exit;
+            throw new HttpException('Forbidden', 403);
         }
         return $request;
     }
