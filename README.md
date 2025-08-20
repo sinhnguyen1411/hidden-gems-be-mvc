@@ -1,6 +1,7 @@
 # Hidden Gems Backend
 
-A minimal PHP MVC backend for the Hidden Gems project. It exposes a RESTful API for discovering and reviewing cafés.
+Hidden Gems is a community-driven platform for discovering and reviewing cafés.
+This repository provides the lightweight PHP MVC backend that powers its RESTful API.
 
 ## Features
 - JWT authentication with register, login, refresh and logout flows
@@ -10,6 +11,7 @@ A minimal PHP MVC backend for the Hidden Gems project. It exposes a RESTful API 
 - Category management
 - Search combining full‑text and geo queries
 - Basic admin dashboard and user role management
+- Role-based access control via middlewares
 
 ## Directory Structure
 ```
@@ -63,4 +65,20 @@ composer test
 - `GET /api/categories`
 
 More endpoints are available in `routes/api.php`.
+
+## Authorization & Middlewares
+
+JWT tokens authenticate requests while middlewares guard access to specific resources.
+
+- `AuthMiddleware` extracts and verifies the token, attaching the user claims to the request.
+- `RoleMiddleware` provides a base check for allowed roles.
+- `AdminMiddleware` and `ShopMiddleware` extend `RoleMiddleware` to restrict routes to admins or shop owners.
+
+Attach these middlewares to routes to enforce permissions:
+
+```php
+$router->get('/admin/users', 'AdminController@index')
+       ->middleware([AuthMiddleware::class, AdminMiddleware::class]);
+```
+
 
