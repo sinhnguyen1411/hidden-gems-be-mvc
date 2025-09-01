@@ -1,164 +1,148 @@
-# Hidden Gems Backend
-Backend service for the Hidden Gems café discovery app. It provides a simple PHP MVC API that supports authentication, café listings, and reviews.
-## Requirements
-- PHP 8.2+
-- Composer
-- MySQL 8
-Hidden Gems is a community-driven platform for discovering and reviewing cafés.
-This repository provides the lightweight PHP MVC backend that powers its RESTful API.
-## API Overview
-- `POST /api/auth/register`
-- `POST /api/auth/login` → returns `{access_token, user}`
-- `POST /api/auth/refresh`
-- `GET /api/users` (admin only)
-- `GET /api/cafes?per_page=10&page=1`
-- `GET /api/cafes/search?q=term`
-- `GET /api/cafes/{id}`
-- `GET /api/cafes/{id}/reviews`
-- `POST /api/cafes/{id}/reviews`
+# Hidden Gems Backend — Frontend Integration Guide
 
-More endpoints are available in `routes/api.php`.
+This backend exposes a compact REST API for the Hidden Gems app. This guide is tailored for frontend engineers: quick setup, conventions, endpoints grouped by screens, sample requests/responses, and direct code pointers.
 
-## Authorization & Middlewares
+## Quick Start
+- Requirements: PHP 8.2+, Composer, MySQL 8
+- Install: `composer install`
+- Env: copy `.env.example` → `.env` and set `DB_*`, `JWT_SECRET`, `APP_URL`, `CORS_ALLOWED_ORIGIN`, contact values
+- Dev server: `php -S 127.0.0.1:8000 -t public` (base URL `http://127.0.0.1:8000`)
+- Migrate: `php database/migrations/migrate.php` (DROPS and recreates DB)
+- Seed (optional): `php database/seeders/seed.php`
 
-JWT tokens authenticate requests while middlewares guard access to specific resources.
+## Conventions
+- Base URL: your `APP_URL` (e.g., `http://127.0.0.1:8000`)
+- Auth: Bearer JWT in `Authorization` header
+- Roles: `admin`, `shop`, `customer`
+- Content types: JSON for POST/PATCH unless noted; uploads via multipart `file`
+- Pagination: `page` (1-based), `per_page` (1–50)
+- Errors: JSON `{error: string, details?: object}` with appropriate status (400/401/403/404/405/422/500)
+- CORS: Allowed origin via `CORS_ALLOWED_ORIGIN`; preflight handled
 
-- `AuthMiddleware` extracts and verifies the token, attaching the user claims to the request.
-- `RoleMiddleware` provides a base check for allowed roles.
-- `AdminMiddleware` and `ShopMiddleware` extend `RoleMiddleware` to restrict routes to admins or shop owners.
+## Auth & Users
+- Register: POST `/api/auth/register` → `{message, user_id}`
+- Login: POST `/api/auth/login` → `{access_token, refresh_token, user}`
+- Refresh: POST `/api/auth/refresh` → `{access_token}`
+- Admin list users: GET `/api/users` (auth + admin) → `{data: User[]}`
 
-### User Roles
-
-Accounts can be one of three roles: `admin`, `shop`, or `customer`.
-All registrations create `customer` accounts and only admins may promote users to `shop` or `admin`.
-
-Attach these middlewares to routes to enforce permissions:
-
-```php
-$router->get('/admin/users', 'AdminController@index')
-       ->middleware([AuthMiddleware::class, AdminMiddleware::class]);
+Example (login)
+```
+curl -X POST "$BASE/api/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@example.com","password":"admin123"}'
+```
+Attach token:
+```
+-H "Authorization: Bearer $ACCESS_TOKEN"
 ```
 
+## Home (shared)
+- Global search: GET `/api/search?q=term` → `{query, stores[], blogs[], vouchers[], promotions[]}`
+- Banners: GET `/api/banners?vi_tri=home` → `{data: Banner[]}`
+- Contact info: GET `/api/contact` → `{email, zalo, phone}`
 
-## Features
-- JWT authentication with register, login and refresh flows
-- User profiles with favorites
-- Café CRUD with media uploads and filtering by category, rating, city and distance
-- Review creation and moderation
-- Category management
-- Search combining full‑text and geo queries
-- Basic admin dashboard and user role management
-- Role-based access control via middlewares
-
-## Directory Structure
+Example (search)
 ```
-hidden-gems-backend/
-├── app/             # Controllers, services, models and helpers
-├── bootstrap/       # Framework bootstrap and service container
-├── config/          # Environment configuration
-├── database/        # Migrations, seeders and factories
-├── public/          # Front controller (index.php)
-├── routes/          # API routes
-├── tests/           # Minimal test runner and specs
-└── vendor/          # Composer dependencies
-```
-main
-
-
-## Installation
-
-```bash
-git clone <repo> hidden-gems-backend
-cd hidden-gems-backend
-composer install
-cp .env.example .env
+curl "$BASE/api/search?q=cafe"
 ```
 
-Update `.env` with database credentials and a `JWT_SECRET`.
+## Stores (public)
+- List: GET `/api/cafes?page=&per_page=&category_id?` → `{data: {items[], total, page, per_page}}`
+- Search: GET `/api/cafes/search?q=term` → `{data: {items[], total, page, per_page}}`
+- Detail: GET `/api/cafes/{id}` → `{data: Store}`
+- Reviews list: GET `/api/cafes/{id}/reviews?page=&per_page=` → `{data: {items[], total, page, per_page}}`
+- Create review: POST `/api/cafes/{id}/reviews` (auth) body `{rating:1..5, content}` → `{message, review_id}`
 
-### Database
-
-
-
-### Database
-
-
-Create the database and load the schema and seed data:
-
-```bash
-mysql -u root -p -e "CREATE DATABASE hidden_gems CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-mysql -u root -p hidden_gems < database/migrations/2025_08_18_000000_init.sql
-php database/seeders/seed.php
+Example (review)
+```
+curl -X POST "$BASE/api/cafes/1/reviews" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"rating":5,"content":"Great!"}'
 ```
 
-The seeder inserts an initial admin account:
+## My Store (shop)
+- My stores: GET `/api/me/stores` (auth) → `{data: {items[], total, page, per_page}}`
+- Create store: POST `/api/stores` (auth + shop) `{ten_cua_hang, mo_ta?, id_trang_thai?, id_vi_tri?}` → `{message, id_cua_hang}` (defaults to pending status)
+- Update store: PATCH `/api/stores/{id}` (auth owner/admin) → `{message}`
+- Create branch: POST `/api/stores/{id}/branches` (auth + shop) → `{message, id_cua_hang}`
+- Upload image: POST `/api/stores/{id}/images` (auth) multipart `file`, optional `is_avatar=1` → `{message, image_id, url}`
 
-- Email: `admin@example.com`
-- Password: `password`
-
-### Running the server
-
-```bash
-php -S 127.0.0.1:8000 -t public
+Example (upload image)
+```
+curl -X POST "$BASE/api/stores/1/images" \
+  -H "Authorization: Bearer $TOKEN" \
+  -F file=@/path/to/photo.jpg -F is_avatar=1
 ```
 
-## Permissions
+## Vouchers (shop/admin)
+- Create: POST `/api/vouchers` `{ma_voucher, ten_voucher?, gia_tri_giam, loai_giam_gia:'percent'|'amount', ngay_het_han?, so_luong_con_lai}` → `{message, id_voucher}`
+- Assign to store: POST `/api/vouchers/assign` `{id_voucher, id_cua_hang}` → `{message}`
+- Store vouchers: GET `/api/stores/{id}/vouchers` → `{data: Voucher[]}`
 
-Users belong to one of three roles:
+## Promotions
+- Admin create: POST `/api/promotions` `{ten_chuong_trinh, mo_ta?, ngay_bat_dau, ngay_ket_thuc, loai_ap_dung?, pham_vi_ap_dung?}` → `{message, id_khuyen_mai}`
+- Shop apply: POST `/api/promotions/{id}/apply` `{id_cua_hang}` → `{message}`
+- Admin review: POST `/api/promotions/{id}/review` `{id_cua_hang, trang_thai:'da_duyet'|'tu_choi'}` → `{message}`
+- Store promos: GET `/api/stores/{id}/promotions` → `{data: Promotion[]}`
 
-| Role     | Description |
-|----------|-------------|
-| `customer` | default role for new registrations |
-| `shop` | café owners who manage listings |
-| `admin` | full access to manage users and cafés |
+## Blog
+- List/search: GET `/api/blog?q=&page=&per_page=` → `{data: {items[], total, page, per_page}}`
+- Create: POST `/api/blog` (auth + admin) `{tieu_de, noi_dung}` → `{message, id_blog}`
+- Update: PATCH `/api/blog/{id}` (auth + admin) `{tieu_de, noi_dung}` → `{message}`
 
-Registration always creates `customer` accounts. Only administrators can promote users to `shop` or `admin`. Middleware enforces access:
+## Chat
+- Send: POST `/api/chat/send` (auth) `{noi_dung, to_user_id?}` → `{message, id_tin_nhan}` (defaults to first admin if `to_user_id` omitted)
+- Messages: GET `/api/chat/messages?with={id_user}&limit=&offset=` (auth) → `{data: Message[]}`
+- Conversations: GET `/api/chat/conversations` (auth) → `{data: {id_user, username, last_id, last_time}[]}`
 
-- `AuthMiddleware` – requires a valid JWT.
-- `AdminMiddleware` – restricts routes to admins.
-- `ShopMiddleware` – restricts routes to shop owners.
+## Admin
+- Dashboard: GET `/api/admin/dashboard` → `{data: {users, shops, stores, reviews, vouchers, promos}}`
+- Set role: POST `/api/admin/users/role` `{id_user, role}` → `{message}`
+- Pending stores: GET `/api/admin/pending-stores` → `{data: Store[]}`
+- Approve/reject store: POST `/api/admin/stores/{id}/approve` `{action:'approve'|'reject'}` → `{message}`
 
-## API
+## Request/Response Details
+- JSON: Use `Content-Type: application/json` for JSON bodies; invalid JSON returns `400 {error:"Invalid JSON"}`
+- Uploads: multipart `file`; limits: default 5MB; allowed extensions `jpg,jpeg,png,gif,webp` (configurable)
+- Pagination responses: `{data: {items[], total, page, per_page}}`
+- Errors: `{error, details?}`; 404 and 405 include CORS headers
+- HEAD: treated as GET without a response body
 
-### Authentication
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/register` | Create a customer account (name, email, password). |
-| POST | `/api/auth/login` | Obtain `{access_token, user}`. |
-| POST | `/api/auth/refresh` | Get a new access token using a refresh token. |
-| GET | `/api/users` | List all users (admin only). |
+## Environment
+- `APP_URL`: base URL to prefix uploaded file links (e.g., `http://127.0.0.1:8000`)
+- `CORS_ALLOWED_ORIGIN`: frontend origin (e.g., `http://localhost:5173`)
+- `CORS_ALLOW_CREDENTIALS=1` (optional), `CORS_MAX_AGE=86400` (optional)
+- `CONTACT_EMAIL`, `CONTACT_ZALO`, `CONTACT_PHONE`: used by `/api/contact`
+- Uploads: `UPLOAD_MAX_BYTES` (e.g., `5242880`), `UPLOAD_ALLOWED_EXT` (e.g., `jpg,jpeg,png,webp`)
 
-### Cafés
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/cafes` | Paginated list of cafés. Supports `per_page` and `page` query parameters. |
-| GET | `/api/cafes/search` | Full‑text search of cafés by `q`. |
-| GET | `/api/cafes/{id}` | Retrieve café details. |
+## Mapping UI → API
+- Home: banners `/api/banners?vi_tri=home`, search `/api/search?q=...`, contact `/api/contact`
+- Store detail: `/api/cafes/{id}` and `/api/cafes/{id}/reviews`; review form posts to `/reviews`
+- Shop dashboard: `/api/me/stores`; image uploads; vouchers/promotions
+- Admin CMS: blog & banner endpoints; users/roles; store approvals; promo reviews
 
-### Reviews
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/cafes/{id}/reviews` | List reviews for a café. |
-| POST | `/api/cafes/{id}/reviews` | Create a review (requires authentication). |
+## Code Map (jump to files)
+- Routes: `routes/api.php:1`
+- Request/Response: `app/Core/Request.php:1`, `app/Core/Response.php:1`
+- Router: `app/Core/Router.php:1`
+- Auth (JWT): `app/Core/Auth.php:1`
+- CORS: `app/Middlewares/CorsMiddleware.php:1`
+- Upload storage: `app/Core/Storage.php:1`
+- Controllers: `app/Controllers/*.php` (e.g., Search, Store, Voucher, Promotion, Blog, Banner, Chat, Admin)
+- Models: `app/Models/*.php`
 
-The full set of routes lives in [`routes/api.php`](routes/api.php).
+## Database
+- Base schema: `database/migrations/2025_08_18_000000_init.sql:1`
+- Extra features: `database/migrations/2025_09_01_000001_extra_features.sql:1`
+  - Banners (`banner`), Chat (`tin_nhan`), Branches (`cua_hang.id_cua_hang_cha`), Promo approvals (`khuyen_mai_cua_hang` fields)
+- Seeder: `database/seeders/seed.php:1` (demo data)
+- Warning: `database/migrations/migrate.php:1` DROPS database before recreating
 
-## Testing with Postman
+## Testing
+- Run unit tests: `composer test`
 
-1. Start the PHP server at `http://127.0.0.1:8000`.
-2. In Postman, set a collection or environment variable `baseUrl` to `http://127.0.0.1:8000`.
-3. **Register** – send `POST {{baseUrl}}/api/auth/register` with JSON body  
-   `{ "name": "Alice", "email": "alice@example.com", "password": "secret" }`
-4. **Login** – send `POST {{baseUrl}}/api/auth/login` with the same credentials to receive an `access_token`.
-5. For protected endpoints, add an `Authorization` header:  
-   `Bearer <access_token>`.
-6. Example: request `GET {{baseUrl}}/api/users` with the token from an admin account.
-7. Use `POST {{baseUrl}}/api/auth/refresh` with `{ "refresh_token": "<token>" }` to renew an access token.
+## Tips
+- Prefer tolerant parsing (ignore unknown fields) and check for `{error}` in responses
+- Debounce search requests client-side
+- Cache banners and contact for the session when appropriate
 
-## Automated Tests
-
-Run the lightweight test suite:
-
-```bash
-composer test
-```

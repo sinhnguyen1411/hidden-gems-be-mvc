@@ -3,8 +3,18 @@ use App\Core\Router;
 use App\Controllers\AuthController;
 use App\Controllers\CafeController;
 use App\Controllers\ReviewController;
+use App\Controllers\SearchController;
+use App\Controllers\StoreController;
+use App\Controllers\VoucherController;
+use App\Controllers\PromotionController;
+use App\Controllers\BlogController;
+use App\Controllers\BannerController;
+use App\Controllers\ChatController;
+use App\Controllers\AdminController;
 use App\Middlewares\AuthMiddleware;
 use App\Middlewares\AdminMiddleware;
+use App\Middlewares\ShopMiddleware;
+use App\Middlewares\AdminOrShopMiddleware;
 use App\Core\Response;
 
 /** @var Router $router */
@@ -14,14 +24,59 @@ $router->add('GET','/',function($req){
     return (new Response())->json(['message'=>'Hidden Gems API']);
 });
 
+// Auth
 $router->add('POST','/api/auth/register',[AuthController::class,'register']);
 $router->add('POST','/api/auth/login',[AuthController::class,'login']);
 $router->add('POST','/api/auth/refresh',[AuthController::class,'refresh']);
 $router->add('GET','/api/users',[AuthController::class,'users'],[AuthMiddleware::class,AdminMiddleware::class]);
 
+// Stores (cafes)
 $router->add('GET','/api/cafes',[CafeController::class,'index']);
 $router->add('GET','/api/cafes/search',[CafeController::class,'search']);
 $router->add('GET','/api/cafes/{id}',[CafeController::class,'show']);
-
 $router->add('GET','/api/cafes/{id}/reviews',[ReviewController::class,'list']);
 $router->add('POST','/api/cafes/{id}/reviews',[ReviewController::class,'create'], [AuthMiddleware::class]);
+
+// Global search across entities
+$router->add('GET','/api/search',[SearchController::class,'global']);
+
+// Store management
+$router->add('POST','/api/stores',[StoreController::class,'create'],[AuthMiddleware::class, ShopMiddleware::class]);
+$router->add('PATCH','/api/stores/{id}',[StoreController::class,'update'],[AuthMiddleware::class]);
+$router->add('POST','/api/stores/{id}/branches',[StoreController::class,'createBranch'],[AuthMiddleware::class, ShopMiddleware::class]);
+$router->add('GET','/api/me/stores',[StoreController::class,'myStores'],[AuthMiddleware::class]);
+$router->add('POST','/api/stores/{id}/images',[StoreController::class,'uploadImage'],[AuthMiddleware::class]);
+
+// Vouchers
+$router->add('POST','/api/vouchers',[VoucherController::class,'create'],[AuthMiddleware::class, AdminOrShopMiddleware::class]);
+$router->add('POST','/api/vouchers/assign',[VoucherController::class,'assign'],[AuthMiddleware::class, AdminOrShopMiddleware::class]);
+$router->add('GET','/api/stores/{id}/vouchers',[VoucherController::class,'byStore']);
+
+// Promotions
+$router->add('POST','/api/promotions',[PromotionController::class,'create'],[AuthMiddleware::class, AdminMiddleware::class]);
+$router->add('POST','/api/promotions/{id}/apply',[PromotionController::class,'applyStore'],[AuthMiddleware::class, ShopMiddleware::class]);
+$router->add('POST','/api/promotions/{id}/review',[PromotionController::class,'reviewApplication'],[AuthMiddleware::class, AdminMiddleware::class]);
+$router->add('GET','/api/stores/{id}/promotions',[PromotionController::class,'byStore']);
+
+// Blog
+$router->add('GET','/api/blog',[BlogController::class,'list']);
+$router->add('POST','/api/blog',[BlogController::class,'create'],[AuthMiddleware::class, AdminMiddleware::class]);
+$router->add('PATCH','/api/blog/{id}',[BlogController::class,'update'],[AuthMiddleware::class, AdminMiddleware::class]);
+
+// Banners and media
+$router->add('GET','/api/banners',[BannerController::class,'list']);
+$router->add('POST','/api/banners',[BannerController::class,'create'],[AuthMiddleware::class, AdminMiddleware::class]);
+$router->add('PATCH','/api/banners/{id}',[BannerController::class,'update'],[AuthMiddleware::class, AdminMiddleware::class]);
+
+// Chat
+$router->add('POST','/api/chat/send',[ChatController::class,'send'],[AuthMiddleware::class]);
+$router->add('GET','/api/chat/messages',[ChatController::class,'messages'],[AuthMiddleware::class]);
+$router->add('GET','/api/chat/conversations',[ChatController::class,'conversations'],[AuthMiddleware::class]);
+
+// Admin & Contact
+$router->add('GET','/api/admin/dashboard',[AdminController::class,'dashboard'],[AuthMiddleware::class, AdminMiddleware::class]);
+$router->add('POST','/api/admin/users/role',[AdminController::class,'setRole'],[AuthMiddleware::class, AdminMiddleware::class]);
+$router->add('GET','/api/admin/pending-stores',[AdminController::class,'pendingStores'],[AuthMiddleware::class, AdminMiddleware::class]);
+$router->add('POST','/api/admin/stores/{id}/approve',[AdminController::class,'approveStore'],[AuthMiddleware::class, AdminMiddleware::class]);
+$router->add('GET','/api/contact',[AdminController::class,'contact']);
+

@@ -8,7 +8,9 @@ class Request
     public array $headers;
     public array $query;
     public array $body;
+    public array $files = [];
     private array $attributes = [];
+    private bool $jsonError = false;
 
     public static function capture(): self
     {
@@ -18,20 +20,61 @@ class Request
         if ($uri === '/index.php' || str_starts_with($uri, '/index.php/')) {
             $uri = substr($uri, strlen('/index.php')) ?: '/';
         }
+        // Normalize trailing slash (except root)
+        if ($uri !== '/' && str_ends_with($uri, '/')) {
+            $uri = rtrim($uri, '/');
+        }
         $req->uri = $uri;
-        $req->headers = function_exists('getallheaders') ? getallheaders() : [];
+
+        // Normalize headers to lowercase keys; add common fallbacks
+        $rawHeaders = function_exists('getallheaders') ? (array)getallheaders() : [];
+        $headers = [];
+        foreach ($rawHeaders as $k => $v) { $headers[strtolower($k)] = $v; }
+        if (!isset($headers['authorization'])) {
+            if (isset($_SERVER['HTTP_AUTHORIZATION'])) $headers['authorization'] = $_SERVER['HTTP_AUTHORIZATION'];
+            elseif (isset($_SERVER['Authorization'])) $headers['authorization'] = $_SERVER['Authorization'];
+        }
+        if (!isset($headers['content-type']) && isset($_SERVER['CONTENT_TYPE'])) {
+            $headers['content-type'] = $_SERVER['CONTENT_TYPE'];
+        }
+        $req->headers = $headers;
         $req->query = $_GET ?? [];
-        $raw = file_get_contents('php://input');
-        $req->body = json_decode($raw, true) ?: [];
+
+        $contentType = $headers['content-type'] ?? '';
+        if (stripos($contentType, 'application/json') !== false) {
+            $raw = file_get_contents('php://input');
+            $data = json_decode($raw, true);
+            if ($raw !== '' && $data === null && json_last_error() !== JSON_ERROR_NONE) {
+                $req->jsonError = true;
+                $req->body = [];
+            } else {
+                $req->body = $data ?: [];
+            }
+        } else {
+            // Fallback to form-encoded or multipart form data
+            $req->body = $_POST ?? [];
+            $req->files = $_FILES ?? [];
+        }
         return $req;
     }
 
     // PSR-7 like helpers
     public function getMethod(): string { return $this->method; }
     public function getUri(): string { return $this->uri; }
-    public function getHeaderLine(string $name): string { return $this->headers[$name] ?? ''; }
+    public function getHeaderLine(string $name): string { $key = strtolower($name); return $this->headers[$key] ?? ''; }
     public function getQueryParams(): array { return $this->query; }
     public function getParsedBody(): array { return $this->body; }
+    public function getUploadedFiles(): array { return $this->files; }
     public function withAttribute(string $key, $value): self { $clone = clone $this; $clone->attributes[$key] = $value; return $clone; }
     public function getAttribute(string $key, $default=null) { return $this->attributes[$key] ?? $default; }
+
+    public function isJson(): bool
+    {
+        return stripos($this->getHeaderLine('content-type'), 'application/json') !== false;
+    }
+
+    public function hasJsonError(): bool
+    {
+        return $this->jsonError;
+    }
 }
