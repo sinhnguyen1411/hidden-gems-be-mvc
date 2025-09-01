@@ -9,65 +9,73 @@ use App\Core\Validator;
 
 class AuthController
 {
-    public function register(Request $req, Response $res): void
+    public function register(Request $req): Response
     {
         $data = $req->getParsedBody();
         $errors = Validator::validate($data,[
-            'ten_dang_nhap'=>'required',
+            'username'=>'required',
             'email'=>'required|email',
             'password'=>'required|min:6'
         ]);
-        if ($errors) { $res->json(['error'=>'Invalid input','details'=>$errors],422); return; }
+        if ($errors) {
+            return (new Response())->json(['error'=>'Invalid input','details'=>$errors],422);
+        }
         $email = strtolower($data['email']);
-        if (User::findByEmail($email)) { $res->json(['error'=>'Email already in use'],409); return; }
+        if (User::findByEmail($email)) {
+            return (new Response())->json(['error'=>'Email already in use'],409);
+        }
         $hash = password_hash($data['password'], PASSWORD_BCRYPT);
-    $ho_va_ten = $data['ho_va_ten'] ?? null;
-    $so_dien_thoai = $data['so_dien_thoai'] ?? null;
-    $id = User::create($data['ten_dang_nhap'], $email, $hash, 'customer', $ho_va_ten, $so_dien_thoai);
-        $res->json(['message' => 'Registered', 'user_id' => $id], 201);
+        $fullName = $data['full_name'] ?? null;
+        $phone = $data['phone_number'] ?? null;
+        $id = User::create($data['username'], $email, $hash, 'customer', $fullName, $phone);
+        return (new Response())->json(['message' => 'Registered', 'user_id' => $id], 201);
     }
 
-    public function login(Request $req, Response $res): void
+    public function login(Request $req): Response
     {
         $data = $req->getParsedBody();
         $password = $data['password'] ?? '';
         $user = null;
         if (!empty($data['email'])) {
             $user = User::findByEmail(strtolower(trim($data['email'])));
-        } elseif (!empty($data['ten_dang_nhap'])) {
-            $user = User::findByUsername($data['ten_dang_nhap']);
+        } elseif (!empty($data['username'])) {
+            $user = User::findByUsername($data['username']);
         }
-        if (!$user || !password_verify($password, $user['mat_khau_ma_hoa'])) {
-            $res->json(['error'=>'Invalid credentials'],401); return;
+        if (!$user || !password_verify($password, $user['password_hash'])) {
+            return (new Response())->json(['error'=>'Invalid credentials'],401);
         }
-        $token = JWTAuth::issue(['uid'=>$user['id_user'],'role'=>$user['vai_tro']]);
+        $token = JWTAuth::issue(['uid'=>$user['id_user'],'role'=>$user['role']]);
         $refresh = bin2hex(random_bytes(32));
         User::saveRefreshToken($user['id_user'],$refresh);
-        $res->json([
+        return (new Response())->json([
             'access_token'=>$token,
             'refresh_token'=>$refresh,
             'user'=>[
                 'id_user'=>$user['id_user'],
-                'ten_dang_nhap'=>$user['ten_dang_nhap'],
+                'username'=>$user['username'],
                 'email'=>$user['email'],
-                'vai_tro'=>$user['vai_tro']
+                'role'=>$user['role']
             ]
         ]);
     }
 
-    public function refresh(Request $req, Response $res): void
+    public function refresh(Request $req): Response
     {
         $data = $req->getParsedBody();
         $token = $data['refresh_token'] ?? '';
-        if (!$token) { $res->json(['error'=>'Invalid token'],401); return; }
+        if (!$token) {
+            return (new Response())->json(['error'=>'Invalid token'],401);
+        }
         $user = User::findByRefreshToken($token);
-        if (!$user) { $res->json(['error'=>'Invalid token'],401); return; }
-        $access = JWTAuth::issue(['uid'=>$user['id_user'],'role'=>$user['vai_tro']]);
-        $res->json(['access_token'=>$access]);
+        if (!$user) {
+            return (new Response())->json(['error'=>'Invalid token'],401);
+        }
+        $access = JWTAuth::issue(['uid'=>$user['id_user'],'role'=>$user['role']]);
+        return (new Response())->json(['access_token'=>$access]);
     }
 
-    public function users(Request $req, Response $res): void
+    public function users(Request $req): Response
     {
-        $res->json(['data'=>User::all()]);
+        return (new Response())->json(['data'=>User::all()]);
     }
 }

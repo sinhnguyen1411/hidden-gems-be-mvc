@@ -8,7 +8,7 @@ class Review
     public static function listByCafe(int $cafeId, int $page=1, int $per=10): array
     {
         $offset = ($page-1)*$per;
-        $stmt = DB::pdo()->prepare('SELECT r.*, u.ten_dang_nhap as user_name FROM danh_gia r JOIN users u ON u.id_user=r.id_user WHERE r.id_cua_hang=? ORDER BY r.id_danh_gia DESC LIMIT ? OFFSET ?');
+        $stmt = DB::pdo()->prepare('SELECT r.*, u.username as user_name FROM danh_gia r JOIN users u ON u.id_user=r.id_user WHERE r.id_cua_hang=? ORDER BY r.id_danh_gia DESC LIMIT ? OFFSET ?');
         $stmt->bindValue(1,$cafeId,\PDO::PARAM_INT);
         $stmt->bindValue(2,$per,\PDO::PARAM_INT);
         $stmt->bindValue(3,$offset,\PDO::PARAM_INT);

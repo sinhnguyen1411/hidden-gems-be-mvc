@@ -7,16 +7,14 @@ require __DIR__ . '/../vendor/autoload.php';
 $app = require __DIR__ . '/../bootstrap/app.php';
 
 $request = Request::capture();
-$response = new Response();
 
 try {
-    $app['router']->dispatch($request, $response);
+    $response = $app['router']->dispatch($request);
 } catch (HttpException $e) {
-    http_response_code($e->getStatus());
-    header('Content-Type: application/json');
-    echo json_encode(['error' => $e->getMessage()]);
+    $response = (new Response())->json(['error' => $e->getMessage()], $e->getStatus());
 } catch (Throwable $e) {
-    http_response_code(500);
-    header('Content-Type: application/json');
-    echo json_encode(['error' => 'Server error', 'message' => $e->getMessage()]);
+    error_log($e->__toString());
+    $response = (new Response())->json(['error' => 'Server error'], 500);
 }
+
+$response->send();

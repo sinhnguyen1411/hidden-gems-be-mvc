@@ -5,10 +5,10 @@ use App\Core\DB;
 
 class User
 {
-    public static function findByUsername(string $ten_dang_nhap): ?array
+    public static function findByUsername(string $username): ?array
     {
-        $stmt = DB::pdo()->prepare('SELECT * FROM users WHERE ten_dang_nhap = ? LIMIT 1');
-        $stmt->execute([$ten_dang_nhap]);
+        $stmt = DB::pdo()->prepare('SELECT * FROM users WHERE username = ? LIMIT 1');
+        $stmt->execute([$username]);
         $row = $stmt->fetch();
         return $row ?: null;
     }
@@ -20,14 +20,14 @@ class User
         return $row ?: null;
     }
 
-    public static function create(string $ten_dang_nhap, string $email, string $mat_khau_ma_hoa, string $vai_tro='customer', string $ho_va_ten=null, string $so_dien_thoai=null): int
+    public static function create(string $username, string $email, string $passwordHash, string $role='customer', string $fullName=null, string $phoneNumber=null): int
     {
         $allowed = ['admin','shop','customer'];
-        if (!in_array($vai_tro, $allowed, true)) {
-            $vai_tro = 'customer';
+        if (!in_array($role, $allowed, true)) {
+            $role = 'customer';
         }
-        $stmt = DB::pdo()->prepare('INSERT INTO users(ten_dang_nhap, email, mat_khau_ma_hoa, vai_tro, ho_va_ten, so_dien_thoai) VALUES(?,?,?,?,?,?)');
-        $stmt->execute([$ten_dang_nhap, $email, $mat_khau_ma_hoa, $vai_tro, $ho_va_ten, $so_dien_thoai]);
+        $stmt = DB::pdo()->prepare('INSERT INTO users(username, email, password_hash, role, full_name, phone_number) VALUES(?,?,?,?,?,?)');
+        $stmt->execute([$username, $email, $passwordHash, $role, $fullName, $phoneNumber]);
         return (int)DB::pdo()->lastInsertId();
     }
 
@@ -49,7 +49,7 @@ class User
 
     public static function all(): array
     {
-        $stmt = DB::pdo()->query('SELECT id_user, ten_dang_nhap, email, ho_va_ten, vai_tro, so_dien_thoai, ngay_tham_gia FROM users');
+        $stmt = DB::pdo()->query('SELECT id_user, username, email, full_name, role, phone_number, joined_at FROM users');
         return $stmt->fetchAll();
     }
 }

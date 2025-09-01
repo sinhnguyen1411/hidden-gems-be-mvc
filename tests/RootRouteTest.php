@@ -16,10 +16,10 @@ final class RootRouteTest extends TestCase
         require __DIR__ . '/../routes/api.php';
 
         $request = Request::capture();
-        $response = new Response();
+        $response = $router->dispatch($request);
 
         ob_start();
-        $router->dispatch($request, $response);
+        $response->send();
         $output = ob_get_clean();
         $data = json_decode($output, true);
 

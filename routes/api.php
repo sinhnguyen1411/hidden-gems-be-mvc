@@ -5,12 +5,13 @@ use App\Controllers\CafeController;
 use App\Controllers\ReviewController;
 use App\Middlewares\AuthMiddleware;
 use App\Middlewares\AdminMiddleware;
+use App\Core\Response;
 
 /** @var Router $router */
 $router = $app['router'];
 
-$router->add('GET','/',function($req,$res){
-    $res->json(['message'=>'Hidden Gems API']);
+$router->add('GET','/',function($req){
+    return (new Response())->json(['message'=>'Hidden Gems API']);
 });
 
 $router->add('POST','/api/auth/register',[AuthController::class,'register']);
