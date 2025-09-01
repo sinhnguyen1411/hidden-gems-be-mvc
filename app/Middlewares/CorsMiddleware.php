@@ -13,7 +13,9 @@ class CorsMiddleware implements Middleware
         header('Access-Control-Allow-Origin: ' . $allowOrigin);
         header('Vary: Origin');
         header('Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS');
-        header('Access-Control-Allow-Headers: Content-Type, Authorization');
+        $csrfHeader = $_ENV['CSRF_HEADER_NAME'] ?? 'X-CSRF-Token';
+        $allowHeaders = 'Content-Type, Authorization' . ($csrfHeader ? ', ' . $csrfHeader : '');
+        header('Access-Control-Allow-Headers: ' . $allowHeaders);
         if (!empty($_ENV['CORS_ALLOW_CREDENTIALS'])) {
             header('Access-Control-Allow-Credentials: true');
         }

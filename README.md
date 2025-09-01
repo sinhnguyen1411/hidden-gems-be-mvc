@@ -2,6 +2,9 @@
 
 This backend exposes a compact REST API for the Hidden Gems app. This guide is tailored for frontend engineers: quick setup, conventions, endpoints grouped by screens, sample requests/responses, and direct code pointers.
 
+## Changelog
+- 2025-09-01: Introduced specialized requests (`JsonRequest`, `FormRequest`) and unified JSON responses via `JsonResponse`. All endpoints consistently return JSON with accurate HTTP status codes. CORS now includes the CSRF header when enabled.
+
 ## Quick Start
 - Requirements: PHP 8.2+, Composer, MySQL 8
 - Install: `composer install`
@@ -163,6 +166,15 @@ curl -X POST "$BASE/api/stores/1/images" \
 
 ## Testing
 - Run unit tests: `composer test`
+
+## Request/Response Classes
+| Type     | Class          | Description                                                                                                                                                   | Source                                          |
+| -------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| Request  | `Request`      | Core HTTP request handler that captures method, URI, headers, query/body data, uploaded files, and provides helpers for JSON detection and data sanitization. | `app/Core/Request.php`:codex-file-citation      |
+| Request  | `FormRequest`  | Marker subclass for form or multipart submissions; relies on base `Request` helpers.                                                                          | `app/Core/FormRequest.php`:codex-file-citation  |
+| Request  | `JsonRequest`  | Marker subclass for JSON requests using `Request`'s parsing and helper methods.                                                                               | `app/Core/JsonRequest.php`:codex-file-citation  |
+| Response | `Response`     | Builds HTTP responses with JSON payloads, error handling, pagination support, header/status customization, and sending logic.                                 | `app/Core/Response.php`:codex-file-citation     |
+| Response | `JsonResponse` | Static convenience methods for returning JSON success or error responses.                                                                                     | `app/Core/JsonResponse.php`:codex-file-citation |
 
 ## Tips
 - Prefer tolerant parsing (ignore unknown fields) and check for `{error}` in responses

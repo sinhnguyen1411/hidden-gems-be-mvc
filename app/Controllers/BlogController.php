@@ -4,6 +4,7 @@ namespace App\Controllers;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\JsonResponse;
+use App\Core\Validator;
 use App\Models\Blog;
 
 class BlogController
@@ -33,9 +34,13 @@ class BlogController
         $user = $req->getAttribute('user', []);
         $uid = (int)($user['uid'] ?? 0);
         $data = $req->getParsedBody();
-        $title = trim($data['tieu_de'] ?? '');
-        $content = trim($data['noi_dung'] ?? '');
-        if ($title==='' || $content==='') return JsonResponse::ok(['error'=>'Invalid input'],422);
+        $errors = Validator::validate($data,[
+            'tieu_de' => 'required',
+            'noi_dung' => 'required|min:1'
+        ]);
+        if ($errors) return JsonResponse::ok(['error'=>'Invalid input','details'=>$errors],422);
+        $title = trim($data['tieu_de']);
+        $content = trim($data['noi_dung']);
         $id = Blog::create($uid,$title,$content);
         return JsonResponse::ok(['message'=>'Blog created','id_blog'=>$id],201);
     }
@@ -44,9 +49,13 @@ class BlogController
     {
         $id = (int)$req->getAttribute('id');
         $data = $req->getParsedBody();
-        $title = trim($data['tieu_de'] ?? '');
-        $content = trim($data['noi_dung'] ?? '');
-        if ($title==='' || $content==='') return JsonResponse::ok(['error'=>'Invalid input'],422);
+        $errors = Validator::validate($data,[
+            'tieu_de' => 'required',
+            'noi_dung' => 'required|min:1'
+        ]);
+        if ($errors) return JsonResponse::ok(['error'=>'Invalid input','details'=>$errors],422);
+        $title = trim($data['tieu_de']);
+        $content = trim($data['noi_dung']);
         $ok = Blog::update($id,$title,$content);
         return JsonResponse::ok(['message'=>$ok?'Updated':'No changes']);
     }

@@ -78,7 +78,17 @@ class Storage
         if ($data === false) {
             throw new \InvalidArgumentException('Invalid base64 data');
         }
+        // Validate size and extension similar to file uploads
+        $size = strlen($data);
+        $maxBytes = isset($_ENV['UPLOAD_MAX_BYTES']) ? (int)$_ENV['UPLOAD_MAX_BYTES'] : 5 * 1024 * 1024; // 5MB default
+        if ($size > $maxBytes) {
+            throw new \RuntimeException('File too large');
+        }
         $ext = self::mimeToExt($mime);
+        $allowedExt = array_filter(array_map('trim', explode(',', $_ENV['UPLOAD_ALLOWED_EXT'] ?? 'jpg,jpeg,png,gif,webp')));
+        if ($ext !== '' && !in_array(strtolower($ext), $allowedExt, true)) {
+            throw new \RuntimeException('Unsupported file type');
+        }
         $basename = $prefix . '_' . bin2hex(random_bytes(8));
         $dir = self::uploadsPath();
         if ($subdir) {

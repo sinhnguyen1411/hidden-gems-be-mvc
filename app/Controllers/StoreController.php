@@ -4,6 +4,7 @@ namespace App\Controllers;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\JsonResponse;
+use App\Core\Validator;
 use App\Models\Cafe;
 use App\Models\Image;
 
@@ -14,6 +15,9 @@ class StoreController
         $user = $req->getAttribute('user', []);
         $uid = (int)($user['uid'] ?? 0);
         $data = $req->getParsedBody();
+        $errors = Validator::validate($data,[
+            'ten_cua_hang' => 'required'
+        ]);
         $name = trim($data['ten_cua_hang'] ?? '');
         $desc = $data['mo_ta'] ?? null;
         $statusId = isset($data['id_trang_thai']) ? (int)$data['id_trang_thai'] : null;
@@ -24,9 +28,7 @@ class StoreController
             $statusId = $row ? (int)$row['id_trang_thai'] : null;
         }
         $locationId = isset($data['id_vi_tri']) ? (int)$data['id_vi_tri'] : null;
-        if ($name === '') {
-            return JsonResponse::ok(['error'=>'Invalid input'],422);
-        }
+        if ($errors) return JsonResponse::ok(['error'=>'Invalid input','details'=>$errors],422);
         $id = Cafe::create($uid,$name,$desc,$statusId,$locationId,null);
         return JsonResponse::ok(['message'=>'Store created','id_cua_hang'=>$id],201);
     }

@@ -4,6 +4,7 @@ namespace App\Controllers;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\JsonResponse;
+use App\Core\Validator;
 use App\Models\Promotion;
 
 class PromotionController
@@ -11,9 +12,12 @@ class PromotionController
     public function create(Request $req): Response
     {
         $data = $req->getParsedBody();
-        foreach (['ten_chuong_trinh','ngay_bat_dau','ngay_ket_thuc'] as $f) {
-            if (empty($data[$f])) return JsonResponse::ok(['error'=>'Missing '.$f],422);
-        }
+        $errors = Validator::validate($data,[
+            'ten_chuong_trinh' => 'required',
+            'ngay_bat_dau' => 'required',
+            'ngay_ket_thuc' => 'required'
+        ]);
+        if ($errors) return JsonResponse::ok(['error'=>'Invalid input','details'=>$errors],422);
         $id = Promotion::create($data);
         return JsonResponse::ok(['message'=>'Promotion created','id_khuyen_mai'=>$id],201);
     }
