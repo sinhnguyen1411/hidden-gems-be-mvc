@@ -3,6 +3,7 @@ namespace App\Controllers;
 
 use App\Core\Request;
 use App\Core\Response;
+use App\Core\JsonResponse;
 use App\Models\Blog;
 
 class BlogController
@@ -22,9 +23,9 @@ class BlogController
             $stmt->execute();
             $items = $stmt->fetchAll();
             $count = (int)\App\Core\DB::pdo()->query('SELECT COUNT(*) FROM blog')->fetchColumn();
-            return (new Response())->json(['data'=>['items'=>$items,'total'=>$count,'page'=>$page,'per_page'=>$per]]);
+            return JsonResponse::ok(['data'=>['items'=>$items,'total'=>$count,'page'=>$page,'per_page'=>$per]]);
         }
-        return (new Response())->json(['data'=>Blog::search($term,$page,$per)]);
+        return JsonResponse::ok(['data'=>Blog::search($term,$page,$per)]);
     }
 
     public function create(Request $req): Response
@@ -34,9 +35,9 @@ class BlogController
         $data = $req->getParsedBody();
         $title = trim($data['tieu_de'] ?? '');
         $content = trim($data['noi_dung'] ?? '');
-        if ($title==='' || $content==='') return (new Response())->json(['error'=>'Invalid input'],422);
+        if ($title==='' || $content==='') return JsonResponse::ok(['error'=>'Invalid input'],422);
         $id = Blog::create($uid,$title,$content);
-        return (new Response())->json(['message'=>'Blog created','id_blog'=>$id],201);
+        return JsonResponse::ok(['message'=>'Blog created','id_blog'=>$id],201);
     }
 
     public function update(Request $req): Response
@@ -45,9 +46,8 @@ class BlogController
         $data = $req->getParsedBody();
         $title = trim($data['tieu_de'] ?? '');
         $content = trim($data['noi_dung'] ?? '');
-        if ($title==='' || $content==='') return (new Response())->json(['error'=>'Invalid input'],422);
+        if ($title==='' || $content==='') return JsonResponse::ok(['error'=>'Invalid input'],422);
         $ok = Blog::update($id,$title,$content);
-        return (new Response())->json(['message'=>$ok?'Updated':'No changes']);
+        return JsonResponse::ok(['message'=>$ok?'Updated':'No changes']);
     }
 }
-

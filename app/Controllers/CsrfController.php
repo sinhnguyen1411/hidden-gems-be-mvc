@@ -3,6 +3,7 @@ namespace App\Controllers;
 
 use App\Core\Request;
 use App\Core\Response;
+use App\Core\JsonResponse;
 use App\Security\Csrf;
 
 class CsrfController
@@ -20,7 +21,6 @@ class CsrfController
             'httponly' => false, // readable by JS for SPA header usage
             'samesite' => 'Lax'
         ]);
-        return (new Response())->json(['token' => $issued['token'], 'expires_at' => $issued['expires_at']]);
+        return JsonResponse::ok(['token' => $issued['token'], 'expires_at' => $issued['expires_at']]);
     }
 }
-

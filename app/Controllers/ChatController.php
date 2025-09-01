@@ -3,6 +3,7 @@ namespace App\Controllers;
 
 use App\Core\Request;
 use App\Core\Response;
+use App\Core\JsonResponse;
 use App\Models\Message;
 use App\Models\User;
 
@@ -24,9 +25,9 @@ class ChatController
             $to = $this->findAdminId();
         }
         $content = trim($data['noi_dung'] ?? '');
-        if (!$to || $content==='') return (new Response())->json(['error'=>'Invalid input'],422);
+        if (!$to || $content==='') return JsonResponse::ok(['error'=>'Invalid input'],422);
         $id = Message::send($from,$to,$content);
-        return (new Response())->json(['message'=>'Sent','id_tin_nhan'=>$id],201);
+        return JsonResponse::ok(['message'=>'Sent','id_tin_nhan'=>$id],201);
     }
 
     public function messages(Request $req): Response
@@ -37,9 +38,9 @@ class ChatController
         $with = isset($q['with']) ? (int)$q['with'] : $this->findAdminId();
         $limit = min(100, max(1,(int)($q['limit'] ?? 50)));
         $offset = max(0,(int)($q['offset'] ?? 0));
-        if (!$with) return (new Response())->json(['error'=>'No counterpart'],422);
+        if (!$with) return JsonResponse::ok(['error'=>'No counterpart'],422);
         $msgs = Message::between($uid,$with,$limit,$offset);
-        return (new Response())->json(['data'=>$msgs]);
+        return JsonResponse::ok(['data'=>$msgs]);
     }
 
     public function conversations(Request $req): Response
@@ -47,7 +48,6 @@ class ChatController
         $user = $req->getAttribute('user', []);
         $uid = (int)($user['uid'] ?? 0);
         $rows = Message::conversationsFor($uid);
-        return (new Response())->json(['data'=>$rows]);
+        return JsonResponse::ok(['data'=>$rows]);
     }
 }
-

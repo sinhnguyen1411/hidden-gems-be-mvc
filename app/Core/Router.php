@@ -6,6 +6,7 @@ use App\Middlewares\SecurityHeadersMiddleware;
 use App\Middlewares\CsrfMiddleware;
 use App\Core\Request;
 use App\Core\Response;
+use App\Core\JsonResponse;
 
 class Router
 {
@@ -58,7 +59,7 @@ class Router
 
             // If client sent invalid JSON with JSON content-type, return 400
             if ($req->isJson() && $req->hasJsonError()) {
-                return (new Response())->jsonError('Invalid JSON', 400);
+                return JsonResponse::error('Invalid JSON', 400);
             }
 
             // Enforce CSRF for state-changing methods if enabled
@@ -76,10 +77,9 @@ class Router
         }
 
         if (!empty($allowedForPath)) {
-            return (new Response())
-                ->withHeader('Allow', implode(', ', array_unique($allowedForPath)))
-                ->jsonError('Method Not Allowed', 405);
+            return JsonResponse::error('Method Not Allowed', 405)
+                ->withHeader('Allow', implode(', ', array_unique($allowedForPath)));
         }
-        return (new Response())->jsonError('Not found', 404);
+        return JsonResponse::error('Not found', 404);
     }
 }

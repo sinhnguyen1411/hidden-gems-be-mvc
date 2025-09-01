@@ -3,6 +3,7 @@ namespace App\Controllers;
 
 use App\Core\Request;
 use App\Core\Response;
+use App\Core\JsonResponse;
 use App\Models\Cafe;
 use App\Models\Image;
 
@@ -24,10 +25,10 @@ class StoreController
         }
         $locationId = isset($data['id_vi_tri']) ? (int)$data['id_vi_tri'] : null;
         if ($name === '') {
-            return (new Response())->json(['error'=>'Invalid input'],422);
+            return JsonResponse::ok(['error'=>'Invalid input'],422);
         }
         $id = Cafe::create($uid,$name,$desc,$statusId,$locationId,null);
-        return (new Response())->json(['message'=>'Store created','id_cua_hang'=>$id],201);
+        return JsonResponse::ok(['message'=>'Store created','id_cua_hang'=>$id],201);
     }
 
     public function update(Request $req): Response
@@ -37,14 +38,14 @@ class StoreController
         $id = (int)$req->getAttribute('id');
         $store = Cafe::find($id);
         if (!$store) {
-            return (new Response())->json(['error'=>'Not found'],404);
+            return JsonResponse::ok(['error'=>'Not found'],404);
         }
         if ((int)$store['id_chu_so_huu'] !== $uid && ($user['role'] ?? '') !== 'admin') {
-            return (new Response())->json(['error'=>'Forbidden'],403);
+            return JsonResponse::ok(['error'=>'Forbidden'],403);
         }
         $fields = $req->getParsedBody();
         $ok = Cafe::updateStore($id,$fields);
-        return (new Response())->json(['message'=>$ok?'Updated':'No changes']);
+        return JsonResponse::ok(['message'=>$ok?'Updated':'No changes']);
     }
 
     public function createBranch(Request $req): Response
@@ -54,10 +55,10 @@ class StoreController
         $parentId = (int)$req->getAttribute('id');
         $parent = Cafe::find($parentId);
         if (!$parent) {
-            return (new Response())->json(['error'=>'Parent not found'],404);
+            return JsonResponse::ok(['error'=>'Parent not found'],404);
         }
         if ((int)$parent['id_chu_so_huu'] !== $uid && ($user['role'] ?? '') !== 'admin') {
-            return (new Response())->json(['error'=>'Forbidden'],403);
+            return JsonResponse::ok(['error'=>'Forbidden'],403);
         }
         $data = $req->getParsedBody();
         $name = trim($data['ten_cua_hang'] ?? ($parent['ten_cua_hang'].' - Chi nhanh'));
@@ -65,7 +66,7 @@ class StoreController
         $statusId = isset($data['id_trang_thai']) ? (int)$data['id_trang_thai'] : ($parent['id_trang_thai'] ?? null);
         $locationId = isset($data['id_vi_tri']) ? (int)$data['id_vi_tri'] : null;
         $id = Cafe::create((int)$parent['id_chu_so_huu'],$name,$desc,$statusId,$locationId,$parentId);
-        return (new Response())->json(['message'=>'Branch created','id_cua_hang'=>$id],201);
+        return JsonResponse::ok(['message'=>'Branch created','id_cua_hang'=>$id],201);
     }
 
     public function myStores(Request $req): Response
@@ -76,7 +77,7 @@ class StoreController
         $page = max(1,(int)($q['page'] ?? 1));
         $per = min(50, max(1, (int)($q['per_page'] ?? 10)));
         $data = Cafe::listOwned($uid,$page,$per);
-        return (new Response())->json(['data'=>$data]);
+        return JsonResponse::ok(['data'=>$data]);
     }
 
     public function uploadImage(Request $req): Response
@@ -85,20 +86,20 @@ class StoreController
         $uid = (int)($user['uid'] ?? 0);
         $storeId = (int)$req->getAttribute('id');
         $store = Cafe::find($storeId);
-        if (!$store) return (new Response())->json(['error'=>'Not found'],404);
+        if (!$store) return JsonResponse::ok(['error'=>'Not found'],404);
         if ((int)$store['id_chu_so_huu'] !== $uid && ($user['role'] ?? '') !== 'admin') {
-            return (new Response())->json(['error'=>'Forbidden'],403);
+            return JsonResponse::ok(['error'=>'Forbidden'],403);
         }
         $files = $req->getUploadedFiles();
         if (!isset($files['file'])) {
-            return (new Response())->json(['error'=>'No file'],422);
+            return JsonResponse::ok(['error'=>'No file'],422);
         }
         try {
             $saved = \App\Core\Storage::saveUploadedFile($files['file'], 'stores');
         } catch (\Throwable $e) {
-            return (new Response())->json(['error'=>'Upload failed'],500);
+            return JsonResponse::ok(['error'=>'Upload failed'],500);
         }
         $imgId = Image::addForStore($storeId, $uid, $saved['url'], (bool)($req->getParsedBody()['is_avatar'] ?? false));
-        return (new Response())->json(['message'=>'Uploaded','image_id'=>$imgId,'url'=>$saved['url']],201);
+        return JsonResponse::ok(['message'=>'Uploaded','image_id'=>$imgId,'url'=>$saved['url']],201);
     }
 }

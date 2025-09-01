@@ -3,6 +3,7 @@ namespace App\Controllers;
 
 use App\Core\Request;
 use App\Core\Response;
+use App\Core\JsonResponse;
 use App\Models\Cafe;
 
 class CafeController
@@ -14,7 +15,7 @@ class CafeController
         $per = min(50, max(1, (int)($query['per_page'] ?? 10)));
         $category = isset($query['category_id']) ? (int)$query['category_id'] : null;
         $data = Cafe::paginate($page,$per,$category);
-        return (new Response())->json(['data'=>$data]);
+        return JsonResponse::ok(['data'=>$data]);
     }
 
     public function search(Request $req): Response
@@ -22,12 +23,12 @@ class CafeController
         $query = $req->getQueryParams();
         $term = trim($query['q'] ?? '');
         if ($term === '') {
-            return (new Response())->json(['error'=>'Missing query'],422);
+            return JsonResponse::ok(['error'=>'Missing query'],422);
         }
         $page = max(1, (int)($query['page'] ?? 1));
         $per = min(50, max(1, (int)($query['per_page'] ?? 10)));
         $data = Cafe::search($term,$page,$per);
-        return (new Response())->json(['data'=>$data]);
+        return JsonResponse::ok(['data'=>$data]);
     }
 
     public function show(Request $req): Response
@@ -35,8 +36,8 @@ class CafeController
         $id = (int)$req->getAttribute('id');
         $cafe = Cafe::find($id);
         if (!$cafe) {
-            return (new Response())->json(['error'=>'Not found'],404);
+            return JsonResponse::ok(['error'=>'Not found'],404);
         }
-        return (new Response())->json(['data'=>$cafe]);
+        return JsonResponse::ok(['data'=>$cafe]);
     }
 }

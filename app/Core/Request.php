@@ -12,9 +12,28 @@ class Request
     private array $attributes = [];
     private bool $jsonError = false;
 
-    public static function capture(): self
+    public static function capture(): static
     {
-        $req = new self();
+        // Decide request type early based on content-type
+        $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+        $rawHeaders = function_exists('getallheaders') ? (array)getallheaders() : [];
+        $headers = [];
+        foreach ($rawHeaders as $k => $v) { $headers[strtolower($k)] = $v; }
+        if (!isset($headers['authorization'])) {
+            if (isset($_SERVER['HTTP_AUTHORIZATION'])) $headers['authorization'] = $_SERVER['HTTP_AUTHORIZATION'];
+            elseif (isset($_SERVER['Authorization'])) $headers['authorization'] = $_SERVER['Authorization'];
+        }
+        if (!isset($headers['content-type']) && isset($_SERVER['CONTENT_TYPE'])) {
+            $headers['content-type'] = $_SERVER['CONTENT_TYPE'];
+        }
+        $contentType = $headers['content-type'] ?? '';
+
+        // Instantiate specialized request type
+        $req = (stripos($contentType, 'application/json') !== false)
+            ? new JsonRequest()
+            : new FormRequest();
+
+        $req->method = $method;
         $req->method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
         $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
         if ($uri === '/index.php' || str_starts_with($uri, '/index.php/')) {
@@ -26,21 +45,9 @@ class Request
         }
         $req->uri = $uri;
 
-        // Normalize headers to lowercase keys; add common fallbacks
-        $rawHeaders = function_exists('getallheaders') ? (array)getallheaders() : [];
-        $headers = [];
-        foreach ($rawHeaders as $k => $v) { $headers[strtolower($k)] = $v; }
-        if (!isset($headers['authorization'])) {
-            if (isset($_SERVER['HTTP_AUTHORIZATION'])) $headers['authorization'] = $_SERVER['HTTP_AUTHORIZATION'];
-            elseif (isset($_SERVER['Authorization'])) $headers['authorization'] = $_SERVER['Authorization'];
-        }
-        if (!isset($headers['content-type']) && isset($_SERVER['CONTENT_TYPE'])) {
-            $headers['content-type'] = $_SERVER['CONTENT_TYPE'];
-        }
         $req->headers = $headers;
         $req->query = $_GET ?? [];
 
-        $contentType = $headers['content-type'] ?? '';
         if (stripos($contentType, 'application/json') !== false) {
             $raw = file_get_contents('php://input');
             $data = json_decode($raw, true);

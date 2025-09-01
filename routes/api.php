@@ -17,12 +17,13 @@ use App\Middlewares\AdminMiddleware;
 use App\Middlewares\ShopMiddleware;
 use App\Middlewares\AdminOrShopMiddleware;
 use App\Core\Response;
+use App\Core\JsonResponse;
 
 /** @var Router $router */
 $router = $app['router'];
 
 $router->add('GET','/',function($req){
-    return (new Response())->json(['message'=>'Hidden Gems API']);
+    return JsonResponse::ok(['message'=>'Hidden Gems API']);
 });
 
 // Auth

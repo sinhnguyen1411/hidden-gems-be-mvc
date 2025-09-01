@@ -3,6 +3,7 @@ namespace App\Controllers;
 
 use App\Core\Request;
 use App\Core\Response;
+use App\Core\JsonResponse;
 use App\Core\Storage;
 use App\Models\Banner;
 
@@ -14,7 +15,7 @@ class BannerController
         $pos = $q['vi_tri'] ?? null;
         $active = !isset($q['active']) || (int)$q['active'] === 1;
         $rows = Banner::list($pos,$active);
-        return (new Response())->json(['data'=>$rows]);
+        return JsonResponse::ok(['data'=>$rows]);
     }
 
     public function create(Request $req): Response
@@ -33,10 +34,10 @@ class BannerController
             $saved = Storage::saveUploadedFile($files['file'], 'banners');
             $imageUrl = $saved['url'];
         }
-        if (!$imageUrl) return (new Response())->json(['error'=>'Image required'],422);
+        if (!$imageUrl) return JsonResponse::ok(['error'=>'Image required'],422);
 
         $id = Banner::create($title,$desc,$imageUrl,$link,$pos,$order,$active);
-        return (new Response())->json(['message'=>'Banner created','id_banner'=>$id,'url_anh'=>$imageUrl],201);
+        return JsonResponse::ok(['message'=>'Banner created','id_banner'=>$id,'url_anh'=>$imageUrl],201);
     }
 
     public function update(Request $req): Response
@@ -53,7 +54,6 @@ class BannerController
             $fields['url_anh'] = $saved['url'];
         }
         $ok = $fields ? Banner::update($id,$fields) : false;
-        return (new Response())->json(['message'=>$ok?'Updated':'No changes']);
+        return JsonResponse::ok(['message'=>$ok?'Updated':'No changes']);
     }
 }
-

@@ -3,6 +3,7 @@ namespace App\Controllers;
 
 use App\Core\Request;
 use App\Core\Response;
+use App\Core\JsonResponse;
 use App\Core\Auth as JWTAuth;
 use App\Models\User;
 use App\Core\Validator;
@@ -18,17 +19,17 @@ class AuthController
             'password'=>'required|min:6'
         ]);
         if ($errors) {
-            return (new Response())->json(['error'=>'Invalid input','details'=>$errors],422);
+            return JsonResponse::ok(['error'=>'Invalid input','details'=>$errors],422);
         }
         $email = strtolower($data['email']);
         if (User::findByEmail($email)) {
-            return (new Response())->json(['error'=>'Email already in use'],409);
+            return JsonResponse::ok(['error'=>'Email already in use'],409);
         }
         $hash = password_hash($data['password'], PASSWORD_BCRYPT);
         $fullName = $data['full_name'] ?? null;
         $phone = $data['phone_number'] ?? null;
         $id = User::create($data['username'], $email, $hash, 'customer', $fullName, $phone);
-        return (new Response())->json(['message' => 'Registered', 'user_id' => $id], 201);
+        return JsonResponse::ok(['message' => 'Registered', 'user_id' => $id], 201);
     }
 
     public function login(Request $req): Response
@@ -42,12 +43,12 @@ class AuthController
             $user = User::findByUsername($data['username']);
         }
         if (!$user || !password_verify($password, $user['password_hash'])) {
-            return (new Response())->json(['error'=>'Invalid credentials'],401);
+            return JsonResponse::ok(['error'=>'Invalid credentials'],401);
         }
         $token = JWTAuth::issue(['uid'=>$user['id_user'],'role'=>$user['role']]);
         $refresh = bin2hex(random_bytes(32));
         User::saveRefreshToken($user['id_user'],$refresh);
-        return (new Response())->json([
+        return JsonResponse::ok([
             'access_token'=>$token,
             'refresh_token'=>$refresh,
             'user'=>[
@@ -64,18 +65,18 @@ class AuthController
         $data = $req->getParsedBody();
         $token = $data['refresh_token'] ?? '';
         if (!$token) {
-            return (new Response())->json(['error'=>'Invalid token'],401);
+            return JsonResponse::ok(['error'=>'Invalid token'],401);
         }
         $user = User::findByRefreshToken($token);
         if (!$user) {
-            return (new Response())->json(['error'=>'Invalid token'],401);
+            return JsonResponse::ok(['error'=>'Invalid token'],401);
         }
         $access = JWTAuth::issue(['uid'=>$user['id_user'],'role'=>$user['role']]);
-        return (new Response())->json(['access_token'=>$access]);
+        return JsonResponse::ok(['access_token'=>$access]);
     }
 
     public function users(Request $req): Response
     {
-        return (new Response())->json(['data'=>User::all()]);
+        return JsonResponse::ok(['data'=>User::all()]);
     }
 }

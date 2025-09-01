@@ -3,6 +3,7 @@ namespace App\Controllers;
 
 use App\Core\Request;
 use App\Core\Response;
+use App\Core\JsonResponse;
 use App\Models\Voucher;
 
 class VoucherController
@@ -17,10 +18,10 @@ class VoucherController
         $expires = $data['ngay_het_han'] ?? null;
         $qty = (int)($data['so_luong_con_lai'] ?? 0);
         if ($code === '' || $value <= 0 || !in_array($type,['percent','amount'],true)) {
-            return (new Response())->json(['error'=>'Invalid input'],422);
+            return JsonResponse::ok(['error'=>'Invalid input'],422);
         }
         $id = Voucher::create($code,$name,$value,$type,$expires,$qty);
-        return (new Response())->json(['message'=>'Voucher created','id_voucher'=>$id],201);
+        return JsonResponse::ok(['message'=>'Voucher created','id_voucher'=>$id],201);
     }
 
     public function assign(Request $req): Response
@@ -29,17 +30,16 @@ class VoucherController
         $voucherId = (int)($data['id_voucher'] ?? 0);
         $storeId = (int)($data['id_cua_hang'] ?? 0);
         if ($voucherId<=0 || $storeId<=0) {
-            return (new Response())->json(['error'=>'Invalid input'],422);
+            return JsonResponse::ok(['error'=>'Invalid input'],422);
         }
         $ok = Voucher::assignToStore($voucherId,$storeId);
-        return (new Response())->json(['message'=>$ok?'Assigned':'No changes']);
+        return JsonResponse::ok(['message'=>$ok?'Assigned':'No changes']);
     }
 
     public function byStore(Request $req): Response
     {
         $storeId = (int)$req->getAttribute('id');
         $rows = Voucher::listByStore($storeId);
-        return (new Response())->json(['data'=>$rows]);
+        return JsonResponse::ok(['data'=>$rows]);
     }
 }
-
