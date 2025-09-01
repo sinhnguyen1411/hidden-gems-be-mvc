@@ -77,4 +77,52 @@ class Request
     {
         return $this->jsonError;
     }
+
+    // Simple filtering helpers
+    public function getString(string $key, string $source = 'body', int $filter = FILTER_SANITIZE_FULL_SPECIAL_CHARS): ?string
+    {
+        $value = $this->getValue($key, $source);
+        if ($value === null) return null;
+        $val = filter_var((string)$value, $filter, FILTER_FLAG_NO_ENCODE_QUOTES);
+        return $val;
+    }
+
+    public function getInt(string $key, string $source = 'body'): ?int
+    {
+        $value = $this->getValue($key, $source);
+        if ($value === null) return null;
+        $opt = ['options' => ['min_range' => PHP_INT_MIN, 'max_range' => PHP_INT_MAX]];
+        $val = filter_var($value, FILTER_VALIDATE_INT, $opt);
+        return $val === false ? null : (int)$val;
+    }
+
+    public function getBool(string $key, string $source = 'body'): ?bool
+    {
+        $value = $this->getValue($key, $source);
+        if ($value === null) return null;
+        $val = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        return $val;
+    }
+
+    public function sanitizeArray(array $data, array $map = []): array
+    {
+        $out = [];
+        foreach ($data as $k=>$v) {
+            if (is_array($v)) { $out[$k] = $this->sanitizeArray($v, $map[$k] ?? []); continue; }
+            $filter = $map[$k] ?? FILTER_SANITIZE_FULL_SPECIAL_CHARS;
+            $out[$k] = filter_var((string)$v, $filter, FILTER_FLAG_NO_ENCODE_QUOTES);
+        }
+        return $out;
+    }
+
+    private function getValue(string $key, string $source)
+    {
+        return match ($source) {
+            'query' => $this->query[$key] ?? null,
+            'body' => $this->body[$key] ?? null,
+            'attr' => $this->getAttribute($key),
+            'header' => $this->getHeaderLine($key),
+            default => $this->body[$key] ?? null
+        };
+    }
 }

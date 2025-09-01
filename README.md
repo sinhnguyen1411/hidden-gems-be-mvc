@@ -18,6 +18,7 @@ This backend exposes a compact REST API for the Hidden Gems app. This guide is t
 - Pagination: `page` (1-based), `per_page` (1–50)
 - Errors: JSON `{error: string, details?: object}` with appropriate status (400/401/403/404/405/422/500)
 - CORS: Allowed origin via `CORS_ALLOWED_ORIGIN`; preflight handled
+- CSRF: Optional anti-CSRF for state-changing requests; see CSRF section
 
 ## Auth & Users
 - Register: POST `/api/auth/register` → `{message, user_id}`
@@ -108,6 +109,25 @@ curl -X POST "$BASE/api/stores/1/images" \
 - Errors: `{error, details?}`; 404 and 405 include CORS headers
 - HEAD: treated as GET without a response body
 
+### CSRF (optional)
+- Enable by setting `CSRF_ENABLED=1` in `.env`
+- Retrieve token: `GET /api/csrf-token` → sets cookie `XSRF-TOKEN` and returns `{token, expires_at}`
+- Send token on state-changing requests (POST/PUT/PATCH/DELETE):
+  - Header: `X-CSRF-Token: <token>` (recommended), or
+  - Body field: `csrf_token`, or
+  - Cookie only (double-submit) when appropriate
+- Configure names/lifetime in env: `CSRF_COOKIE_NAME`, `CSRF_HEADER_NAME`, `CSRF_LIFETIME_SECONDS`
+
+### Security Headers
+- Defaults sent on every response (configurable):
+  - HSTS: `Strict-Transport-Security`
+  - CSP: `Content-Security-Policy`
+  - No sniff: `X-Content-Type-Options: nosniff`
+  - Frame deny: `X-Frame-Options: DENY`
+  - Referrer: `Referrer-Policy: no-referrer`
+  - Permissions-Policy: conservative defaults
+- Customize via `.env` (see Security headers and CORS extras in `.env.example`)
+
 ## Environment
 - `APP_URL`: base URL to prefix uploaded file links (e.g., `http://127.0.0.1:8000`)
 - `CORS_ALLOWED_ORIGIN`: frontend origin (e.g., `http://localhost:5173`)
@@ -145,4 +165,3 @@ curl -X POST "$BASE/api/stores/1/images" \
 - Prefer tolerant parsing (ignore unknown fields) and check for `{error}` in responses
 - Debounce search requests client-side
 - Cache banners and contact for the session when appropriate
-

@@ -11,6 +11,7 @@ use App\Controllers\BlogController;
 use App\Controllers\BannerController;
 use App\Controllers\ChatController;
 use App\Controllers\AdminController;
+use App\Controllers\CsrfController;
 use App\Middlewares\AuthMiddleware;
 use App\Middlewares\AdminMiddleware;
 use App\Middlewares\ShopMiddleware;
@@ -80,3 +81,5 @@ $router->add('GET','/api/admin/pending-stores',[AdminController::class,'pendingS
 $router->add('POST','/api/admin/stores/{id}/approve',[AdminController::class,'approveStore'],[AuthMiddleware::class, AdminMiddleware::class]);
 $router->add('GET','/api/contact',[AdminController::class,'contact']);
 
+// CSRF token for SPAs (sets cookie and returns token)
+$router->add('GET','/api/csrf-token',[CsrfController::class,'token']);

@@ -2,6 +2,8 @@
 namespace App\Core;
 
 use App\Middlewares\CorsMiddleware;
+use App\Middlewares\SecurityHeadersMiddleware;
+use App\Middlewares\CsrfMiddleware;
 use App\Core\Request;
 use App\Core\Response;
 
@@ -25,7 +27,8 @@ class Router
 
     public function dispatch(Request $req): Response
     {
-        // Ensure CORS headers for all responses
+        // Ensure security and CORS headers for all responses
+        $req = (new SecurityHeadersMiddleware())->handle($req);
         $req = (new CorsMiddleware())->handle($req);
 
         $method = $req->getMethod();
@@ -57,6 +60,9 @@ class Router
             if ($req->isJson() && $req->hasJsonError()) {
                 return (new Response())->jsonError('Invalid JSON', 400);
             }
+
+            // Enforce CSRF for state-changing methods if enabled
+            $req = (new CsrfMiddleware())->handle($req);
 
             foreach ($r['middlewares'] as $m) {
                 $req = (new $m())->handle($req);
