@@ -103,11 +103,12 @@ curl -X POST "$BASE/api/stores/1/images" \
 - Approve/reject store: POST `/api/admin/stores/{id}/approve` `{action:'approve'|'reject'}` → `{message}`
 
 ## Request/Response Details
-- JSON: Use `Content-Type: application/json` for JSON bodies; invalid JSON returns `400 {error:"Invalid JSON"}`
-- Uploads: multipart `file`; limits: default 5MB; allowed extensions `jpg,jpeg,png,gif,webp` (configurable)
-- Pagination responses: `{data: {items[], total, page, per_page}}`
-- Errors: `{error, details?}`; 404 and 405 include CORS headers
-- HEAD: treated as GET without a response body
+- Always JSON responses: server uses a dedicated `JsonResponse` so all endpoints return `application/json; charset=utf-8`.
+- JSON requests: send `Content-Type: application/json` for bodies; invalid JSON returns `400 {error:"Invalid JSON"}`.
+- Form/multipart requests: for uploads or form posts with files, send `multipart/form-data` with field `file` (see endpoints that mention uploads).
+- Pagination: `{data: {items[], total, page, per_page}}` for list endpoints.
+- Error shape: `{error, details?}` and appropriate status (`400/401/403/404/405/422/500`). `405` also includes an `Allow` header.
+- HEAD: handled as GET but without a response body (headers + status only).
 
 ### CSRF (optional)
 - Enable by setting `CSRF_ENABLED=1` in `.env`
@@ -144,6 +145,8 @@ curl -X POST "$BASE/api/stores/1/images" \
 ## Code Map (jump to files)
 - Routes: `routes/api.php:1`
 - Request/Response: `app/Core/Request.php:1`, `app/Core/Response.php:1`
+- Specialized requests: `app/Core/JsonRequest.php:1`, `app/Core/FormRequest.php:1`
+- JSON response helpers: `app/Core/JsonResponse.php:1`
 - Router: `app/Core/Router.php:1`
 - Auth (JWT): `app/Core/Auth.php:1`
 - CORS: `app/Middlewares/CorsMiddleware.php:1`
