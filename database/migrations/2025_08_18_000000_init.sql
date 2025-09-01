@@ -14,18 +14,18 @@ CREATE TABLE status (
 -- 1) NGƯỜI DÙNG
 CREATE TABLE users (
   id_user INT PRIMARY KEY AUTO_INCREMENT,
-  ten_dang_nhap VARCHAR(255) NOT NULL,
+  username VARCHAR(255) NOT NULL,
   email VARCHAR(255) NOT NULL,
-  mat_khau_ma_hoa VARCHAR(255) NOT NULL,
-  ho_va_ten VARCHAR(255),
-  vai_tro VARCHAR(50) NOT NULL DEFAULT 'customer',
-  CHECK (vai_tro IN ('admin','shop','customer')),
-  refresh_token VARCHAR(255),
-  so_dien_thoai VARCHAR(20),
-  ngay_tham_gia DATE NOT NULL DEFAULT (CURRENT_DATE),
+  password_hash VARCHAR(512) NOT NULL,
+  full_name VARCHAR(255),
+  role VARCHAR(50) NOT NULL DEFAULT 'customer',
+  CHECK (role IN ('admin','shop','customer')),
+  refresh_token VARCHAR(512),
+  phone_number VARCHAR(20),
+  joined_at DATE NOT NULL DEFAULT (CURRENT_DATE),
   UNIQUE KEY uq_user_email (email),
-  UNIQUE KEY uq_user_username (ten_dang_nhap),
-  UNIQUE KEY uq_user_phone (so_dien_thoai)
+  UNIQUE KEY uq_user_username (username),
+  UNIQUE KEY uq_user_phone (phone_number)
 ) ENGINE=InnoDB;
 
 -- 3) VỊ TRÍ
@@ -195,4 +195,7 @@ CREATE INDEX idx_store_status ON cua_hang(id_trang_thai);
 CREATE INDEX idx_location_city ON vi_tri(thanh_pho);
 CREATE INDEX idx_review_store ON danh_gia(id_cua_hang);
 CREATE INDEX idx_image_store  ON hinh_anh(id_cua_hang);
+CREATE INDEX idx_review_user ON danh_gia(id_user);
+CREATE INDEX idx_vs_voucher ON voucher_cua_hang(id_voucher);
+CREATE INDEX idx_vs_store   ON voucher_cua_hang(id_cua_hang);
 
