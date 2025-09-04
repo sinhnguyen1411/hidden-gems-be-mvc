@@ -3,6 +3,7 @@
 This backend exposes a compact REST API for the Hidden Gems app. This guide is tailored for frontend engineers: quick setup, conventions, endpoints grouped by screens, sample requests/responses, and direct code pointers.
 
 ## Changelog
+- 2025-09-04: Wallet deposits (demo) and Advertising requests with admin approval. New endpoints documented below.
 - 2025-09-01: Introduced specialized requests (`JsonRequest`, `FormRequest`) and unified JSON responses via `JsonResponse`. All endpoints consistently return JSON with accurate HTTP status codes. CORS now includes the CSRF header when enabled.
 
 ## Quick Start
@@ -138,6 +139,7 @@ curl -X POST "$BASE/api/stores/1/images" \
 - `CORS_ALLOW_CREDENTIALS=1` (optional), `CORS_MAX_AGE=86400` (optional)
 - `CONTACT_EMAIL`, `CONTACT_ZALO`, `CONTACT_PHONE`: used by `/api/contact`
 - Uploads: `UPLOAD_MAX_BYTES` (e.g., `5242880`), `UPLOAD_ALLOWED_EXT` (e.g., `jpg,jpeg,png,webp`)
+- Bank webhook (demo): `BANK_WEBHOOK_SECRET` (optional) to restrict the simulated bank transfer endpoint
 
 ## Mapping UI → API
 - Home: banners `/api/banners?vi_tri=home`, search `/api/search?q=...`, contact `/api/contact`
@@ -180,3 +182,59 @@ curl -X POST "$BASE/api/stores/1/images" \
 - Prefer tolerant parsing (ignore unknown fields) and check for `{error}` in responses
 - Debounce search requests client-side
 - Cache banners and contact for the session when appropriate
+
+## Wallet & Ads
+
+### Wallet (demo deposit)
+- Balance: GET `/api/me/wallet` (auth) -> `{data:{so_du:number}}`
+- History: GET `/api/me/wallet/history?limit=&offset=` (auth) -> `{data: Transaction[]}`
+- Deposit instructions: GET `/api/me/wallet/deposit-instructions` (auth) -> bank info and required content syntax
+- Simulated bank webhook: POST `/api/simulate/bank-transfer` (demo; not real payment)
+  - Headers (optional): `X-Webhook-Secret: <BANK_WEBHOOK_SECRET>` if set
+  - Body (JSON): `{ "noi_dung": "HG NAP {id_user}", "so_tien": 25.00 }`
+  - Behavior: Parses `noi_dung` for `HG NAP <id_user>` and credits that user's wallet
+
+Notes
+- Prefix `HG` stands for Hidden Gems. Required syntax: `HG NAP {id_user}`.
+- See code: `app/Controllers/WalletController.php:1`, `app/Models/Wallet.php:1`
+- DB schema: `database/migrations/2025_09_04_000010_wallet_and_ads.sql:1` (tables `vi_tien`, `giao_dich_vi`)
+
+### Advertising (shop + admin)
+- Packages: GET `/api/ads/packages` -> `{data:[{ma_goi:'1d'|'1w'|'1m', so_ngay, gia_usd, ten}]}`
+  - Defaults: 1d=$1, 1w=$5, 1m=$18
+- Create request (shop): POST `/api/ads/requests` (auth + shop)
+  - Body: `{ id_cua_hang:number, goi:'1d'|'1w'|'1m', ngay_bat_dau:'YYYY-MM-DD' }`
+  - Rules: `ngay_bat_dau` must be at least 1 day in advance. Wallet is charged immediately; request moves to `cho_duyet`.
+  - Response: `{message, id_yeu_cau}` or `{error, so_du?}` when insufficient balance
+- My requests: GET `/api/ads/requests/my` (auth) -> `{data:{items[], total, page, per_page}}`
+- Admin pending: GET `/api/admin/ads/requests/pending` (auth + admin) -> `{data:{items[], total, page, per_page}}`
+- Admin review: POST `/api/admin/ads/requests/{id}/review` (auth + admin)
+  - Body: `{ trang_thai: 'da_duyet' | 'tu_choi' }`
+  - Reject automatically refunds the wallet
+- Active ads (for homepage): GET `/api/ads/active?tai_ngay=YYYY-MM-DD` -> `{data: Ad[]}`
+
+Notes
+- See code: `app/Controllers/AdvertisingController.php:1`, `app/Models/AdRequest.php:1`
+- DB schema: `database/migrations/2025_09_04_000010_wallet_and_ads.sql:1` (table `yeu_cau_quang_cao`)
+
+### Example flows
+1) Deposit then request an ad
+```
+# 1. Get deposit syntax for the current user
+GET /api/me/wallet/deposit-instructions
+
+# 2. Simulate a deposit (demo)
+POST /api/simulate/bank-transfer
+{ "noi_dung": "HG NAP 42", "so_tien": 20 }
+
+# 3. Buy a 1-week ad for store 123 starting next week
+POST /api/ads/requests
+{ "id_cua_hang": 123, "goi": "1w", "ngay_bat_dau": "2025-09-12" }
+
+# 4. Admin approves
+POST /api/admin/ads/requests/1/review
+{ "trang_thai": "da_duyet" }
+
+# 5. Frontend shows active ads on homepage
+GET /api/ads/active?tai_ngay=2025-09-12
+```

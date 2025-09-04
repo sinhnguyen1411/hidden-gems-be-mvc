@@ -11,6 +11,8 @@ use App\Controllers\BlogController;
 use App\Controllers\BannerController;
 use App\Controllers\ChatController;
 use App\Controllers\AdminController;
+use App\Controllers\WalletController;
+use App\Controllers\AdvertisingController;
 use App\Controllers\CsrfController;
 use App\Middlewares\AuthMiddleware;
 use App\Middlewares\AdminMiddleware;
@@ -81,6 +83,22 @@ $router->add('POST','/api/admin/users/role',[AdminController::class,'setRole'],[
 $router->add('GET','/api/admin/pending-stores',[AdminController::class,'pendingStores'],[AuthMiddleware::class, AdminMiddleware::class]);
 $router->add('POST','/api/admin/stores/{id}/approve',[AdminController::class,'approveStore'],[AuthMiddleware::class, AdminMiddleware::class]);
 $router->add('GET','/api/contact',[AdminController::class,'contact']);
+
+// Wallet
+$router->add('GET','/api/me/wallet',[WalletController::class,'me'],[AuthMiddleware::class]);
+$router->add('GET','/api/me/wallet/history',[WalletController::class,'history'],[AuthMiddleware::class]);
+$router->add('GET','/api/me/wallet/deposit-instructions',[WalletController::class,'depositInstructions'],[AuthMiddleware::class]);
+// Simulated bank webhook: optionally secured by BANK_WEBHOOK_SECRET
+$router->add('POST','/api/simulate/bank-transfer',[WalletController::class,'simulateBankTransfer']);
+
+// Advertising
+$router->add('GET','/api/ads/packages',[AdvertisingController::class,'packagesList']);
+$router->add('POST','/api/ads/requests',[AdvertisingController::class,'create'],[AuthMiddleware::class, ShopMiddleware::class]);
+$router->add('GET','/api/ads/requests/my',[AdvertisingController::class,'myRequests'],[AuthMiddleware::class]);
+$router->add('GET','/api/ads/active',[AdvertisingController::class,'active']);
+// Admin review for ads
+$router->add('GET','/api/admin/ads/requests/pending',[AdvertisingController::class,'adminPending'],[AuthMiddleware::class, AdminMiddleware::class]);
+$router->add('POST','/api/admin/ads/requests/{id}/review',[AdvertisingController::class,'adminReview'],[AuthMiddleware::class, AdminMiddleware::class]);
 
 // CSRF token for SPAs (sets cookie and returns token)
 $router->add('GET','/api/csrf-token',[CsrfController::class,'token']);
