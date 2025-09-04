@@ -14,6 +14,105 @@ This backend exposes a compact REST API for the Hidden Gems app. This guide is t
 - Migrate: `php database/migrations/migrate.php` (DROPS and recreates DB)
 - Seed (optional): `php database/seeders/seed.php`
 
+## Project Structure (Laravel-like)
+- app/Http/Controllers: HTTP controllers (e.g., AuthController, StoreController)
+- app/Http/Middleware: HTTP middleware (e.g., AuthMiddleware, CsrfMiddleware)
+- app/Models: Data access layer (plain PDO)
+- app/Core: Framework core (Router, Request/Response, DB, etc.)
+- routes/web.php: Web routes (root, non-API)
+- routes/api.php: API routes (JSON)
+- bootstrap/app.php: App bootstrap, env + DB init, routes load
+- public/index.php: Front controller (single entry point)
+
+## Repository Tree
+```
+.
+├─ app/
+│  ├─ Core/
+│  │  ├─ Auth.php
+│  │  ├─ DB.php
+│  │  ├─ JsonRequest.php
+│  │  ├─ JsonResponse.php
+│  │  ├─ Request.php
+│  │  ├─ Response.php
+│  │  ├─ Router.php
+│  │  └─ Storage.php
+│  ├─ Http/
+│  │  ├─ Controllers/
+│  │  │  ├─ Controller.php
+│  │  │  ├─ AdminController.php
+│  │  │  ├─ AdvertisingController.php
+│  │  │  ├─ AuthController.php
+│  │  │  ├─ BannerController.php
+│  │  │  ├─ BlogController.php
+│  │  │  ├─ CafeController.php
+│  │  │  ├─ ChatController.php
+│  │  │  ├─ CsrfController.php
+│  │  │  ├─ PromotionController.php
+│  │  │  ├─ ReviewController.php
+│  │  │  ├─ SearchController.php
+│  │  │  ├─ StoreController.php
+│  │  │  ├─ VoucherController.php
+│  │  │  └─ WalletController.php
+│  │  └─ Middleware/
+│  │     ├─ AdminMiddleware.php
+│  │     ├─ AdminOrShopMiddleware.php
+│  │     ├─ AuthMiddleware.php
+│  │     ├─ CorsMiddleware.php
+│  │     ├─ CsrfMiddleware.php
+│  │     ├─ RoleMiddleware.php
+│  │     ├─ SecurityHeadersMiddleware.php
+│  │     └─ ShopMiddleware.php
+│  ├─ Models/
+│  │  ├─ AdRequest.php
+│  │  ├─ Banner.php
+│  │  ├─ Blog.php
+│  │  ├─ Cafe.php
+│  │  ├─ Image.php
+│  │  ├─ Message.php
+│  │  ├─ Promotion.php
+│  │  ├─ Review.php
+│  │  ├─ User.php
+│  │  ├─ Voucher.php
+│  │  └─ Wallet.php
+│  └─ Security/
+│     └─ Csrf.php
+├─ bootstrap/
+│  └─ app.php
+├─ database/
+│  ├─ migrations/
+│  │  ├─ 2025_08_18_000000_init.sql
+│  │  ├─ 2025_09_01_000001_extra_features.sql
+│  │  ├─ 2025_09_04_000010_wallet_and_ads.sql
+│  │  └─ migrate.php
+│  └─ seeders/
+│     └─ seed.php
+├─ public/
+│  └─ index.php
+├─ routes/
+│  ├─ api.php
+│  └─ web.php
+├─ tests/
+│  ├─ AuthTest.php
+│  ├─ RootRouteTest.php
+│  ├─ TestCase.php
+│  └─ ValidatorTest.php
+├─ vendor/ (composer)
+├─ .env, .env.example
+├─ composer.json, composer.lock, composer.phar
+└─ README.md
+```
+
+## Laravel-like Structure
+- Familiarity: Mirrors Laravel’s `app/Http/{Controllers,Middleware}` + `routes/{web,api}`, reducing onboarding time for most PHP engineers.
+- Separation of concerns: Clear boundaries between HTTP layer (controllers/middleware), domain/data (models), and framework internals (core). Improves readability and testability.
+- Routing clarity: Splitting `web.php` and `api.php` allows different policies (e.g., middleware groups, rate limits) and keeps API endpoints discoverable.
+- Namespacing/Autoloading: PSR-4 namespaces (`App\Http\...`) align with Composer autoload and make future migration to a full Laravel app smoother.
+- Middleware pipeline: Centralized CORS, CSRF, and security headers run consistently for every request via the Router’s pipeline.
+- Single entry point: `public/index.php` keeps deployment simple and consistent with modern PHP apps.
+- Incremental growth: You can later add `config/`, service providers, request validators, or swap PDO models for an ORM without changing the public API.
+- Performance-friendly: Retains a lightweight custom router while adopting Laravel’s directory conventions—good for demos and small deployments.
+
 ## Conventions
 - Base URL: your `APP_URL` (e.g., `http://127.0.0.1:8000`)
 - Auth: Bearer JWT in `Authorization` header
@@ -154,9 +253,9 @@ curl -X POST "$BASE/api/stores/1/images" \
 - JSON response helpers: `app/Core/JsonResponse.php:1`
 - Router: `app/Core/Router.php:1`
 - Auth (JWT): `app/Core/Auth.php:1`
-- CORS: `app/Middlewares/CorsMiddleware.php:1`
+- CORS: `app/Http/Middleware/CorsMiddleware.php:1`
 - Upload storage: `app/Core/Storage.php:1`
-- Controllers: `app/Controllers/*.php` (e.g., Search, Store, Voucher, Promotion, Blog, Banner, Chat, Admin)
+- Controllers: `app/Http/Controllers/*.php` (e.g., Search, Store, Voucher, Promotion, Blog, Banner, Chat, Admin)
 - Models: `app/Models/*.php`
 
 ## Database
@@ -196,7 +295,7 @@ curl -X POST "$BASE/api/stores/1/images" \
 
 Notes
 - Prefix `HG` stands for Hidden Gems. Required syntax: `HG NAP {id_user}`.
-- See code: `app/Controllers/WalletController.php:1`, `app/Models/Wallet.php:1`
+- See code: `app/Http/Controllers/WalletController.php:1`, `app/Models/Wallet.php:1`
 - DB schema: `database/migrations/2025_09_04_000010_wallet_and_ads.sql:1` (tables `vi_tien`, `giao_dich_vi`)
 
 ### Advertising (shop + admin)
@@ -214,7 +313,7 @@ Notes
 - Active ads (for homepage): GET `/api/ads/active?tai_ngay=YYYY-MM-DD` -> `{data: Ad[]}`
 
 Notes
-- See code: `app/Controllers/AdvertisingController.php:1`, `app/Models/AdRequest.php:1`
+- See code: `app/Http/Controllers/AdvertisingController.php:1`, `app/Models/AdRequest.php:1`
 - DB schema: `database/migrations/2025_09_04_000010_wallet_and_ads.sql:1` (table `yeu_cau_quang_cao`)
 
 ### Example flows

@@ -1,5 +1,5 @@
 <?php
-namespace App\Controllers;
+namespace App\Http\Controllers;
 
 use App\Core\Request;
 use App\Core\Response;
@@ -8,7 +8,7 @@ use App\Core\Auth as JWTAuth;
 use App\Models\User;
 use App\Core\Validator;
 
-class AuthController
+class AuthController extends Controller
 {
     public function register(Request $req): Response
     {

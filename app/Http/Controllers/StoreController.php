@@ -1,5 +1,5 @@
 <?php
-namespace App\Controllers;
+namespace App\Http\Controllers;
 
 use App\Core\Request;
 use App\Core\Response;
@@ -8,7 +8,7 @@ use App\Core\Validator;
 use App\Models\Cafe;
 use App\Models\Image;
 
-class StoreController
+class StoreController extends Controller
 {
     public function create(Request $req): Response
     {

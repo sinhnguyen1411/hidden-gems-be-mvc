@@ -1,5 +1,5 @@
 <?php
-namespace App\Middlewares;
+namespace App\Http\Middleware;
 
 class AdminOrShopMiddleware extends RoleMiddleware
 {
@@ -8,4 +8,3 @@ class AdminOrShopMiddleware extends RoleMiddleware
         return ['admin','shop'];
     }
 }
-

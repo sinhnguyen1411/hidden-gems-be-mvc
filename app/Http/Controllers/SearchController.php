@@ -1,5 +1,5 @@
 <?php
-namespace App\Controllers;
+namespace App\Http\Controllers;
 
 use App\Core\Request;
 use App\Core\Response;
@@ -9,7 +9,7 @@ use App\Models\Blog;
 use App\Models\Voucher;
 use App\Models\Promotion;
 
-class SearchController
+class SearchController extends Controller
 {
     public function global(Request $req): Response
     {

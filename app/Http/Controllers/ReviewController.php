@@ -1,12 +1,12 @@
 <?php
-namespace App\Controllers;
+namespace App\Http\Controllers;
 
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\JsonResponse;
 use App\Models\Review;
 
-class ReviewController
+class ReviewController extends Controller
 {
     public function list(Request $req): Response
     {

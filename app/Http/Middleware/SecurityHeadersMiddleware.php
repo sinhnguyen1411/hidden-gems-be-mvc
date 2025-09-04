@@ -1,5 +1,5 @@
 <?php
-namespace App\Middlewares;
+namespace App\Http\Middleware;
 
 use App\Core\Middleware;
 use App\Core\Request;
@@ -32,4 +32,3 @@ class SecurityHeadersMiddleware implements Middleware
         return $request;
     }
 }
-

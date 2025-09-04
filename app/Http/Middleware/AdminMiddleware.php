@@ -1,5 +1,5 @@
 <?php
-namespace App\Middlewares;
+namespace App\Http\Middleware;
 
 class AdminMiddleware extends RoleMiddleware
 {

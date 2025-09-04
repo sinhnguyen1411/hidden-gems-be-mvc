@@ -1,5 +1,5 @@
 <?php
-namespace App\Controllers;
+namespace App\Http\Controllers;
 
 use App\Core\Request;
 use App\Core\Response;
@@ -7,7 +7,7 @@ use App\Core\JsonResponse;
 use App\Core\Storage;
 use App\Models\Banner;
 
-class BannerController
+class BannerController extends Controller
 {
     public function list(Request $req): Response
     {

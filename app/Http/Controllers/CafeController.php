@@ -1,12 +1,12 @@
 <?php
-namespace App\Controllers;
+namespace App\Http\Controllers;
 
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\JsonResponse;
 use App\Models\Cafe;
 
-class CafeController
+class CafeController extends Controller
 {
     public function index(Request $req): Response
     {

@@ -19,6 +19,7 @@ DB::init([
     'password' => $_ENV['DB_PASSWORD'] ?? ''
 ]);
 
+require __DIR__ . '/../routes/web.php';
 require __DIR__ . '/../routes/api.php';
 
 return $app;

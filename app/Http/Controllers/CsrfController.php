@@ -1,12 +1,12 @@
 <?php
-namespace App\Controllers;
+namespace App\Http\Controllers;
 
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\JsonResponse;
 use App\Security\Csrf;
 
-class CsrfController
+class CsrfController extends Controller
 {
     public function token(Request $req): Response
     {

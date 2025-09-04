@@ -1,12 +1,12 @@
 <?php
-namespace App\Controllers;
+namespace App\Http\Controllers;
 
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\JsonResponse;
 use App\Models\Wallet;
 
-class WalletController
+class WalletController extends Controller
 {
     public function me(Request $req): Response
     {

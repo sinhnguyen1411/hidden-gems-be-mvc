@@ -1,9 +1,9 @@
 <?php
 namespace App\Core;
 
-use App\Middlewares\CorsMiddleware;
-use App\Middlewares\SecurityHeadersMiddleware;
-use App\Middlewares\CsrfMiddleware;
+use App\Http\Middleware\CorsMiddleware;
+use App\Http\Middleware\SecurityHeadersMiddleware;
+use App\Http\Middleware\CsrfMiddleware;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\JsonResponse;

@@ -1,5 +1,5 @@
 <?php
-namespace App\Controllers;
+namespace App\Http\Controllers;
 
 use App\Core\Request;
 use App\Core\Response;
@@ -8,7 +8,7 @@ use App\Models\AdRequest;
 use App\Models\Wallet;
 use App\Models\Cafe;
 
-class AdvertisingController
+class AdvertisingController extends Controller
 {
     private function packages(): array
     {
@@ -137,4 +137,3 @@ class AdvertisingController
         return JsonResponse::ok(['data'=>$rows]);
     }
 }
-

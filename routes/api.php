@@ -1,32 +1,33 @@
 <?php
 use App\Core\Router;
-use App\Controllers\AuthController;
-use App\Controllers\CafeController;
-use App\Controllers\ReviewController;
-use App\Controllers\SearchController;
-use App\Controllers\StoreController;
-use App\Controllers\VoucherController;
-use App\Controllers\PromotionController;
-use App\Controllers\BlogController;
-use App\Controllers\BannerController;
-use App\Controllers\ChatController;
-use App\Controllers\AdminController;
-use App\Controllers\WalletController;
-use App\Controllers\AdvertisingController;
-use App\Controllers\CsrfController;
-use App\Middlewares\AuthMiddleware;
-use App\Middlewares\AdminMiddleware;
-use App\Middlewares\ShopMiddleware;
-use App\Middlewares\AdminOrShopMiddleware;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CafeController;
+use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\SearchController;
+use App\Http\Controllers\StoreController;
+use App\Http\Controllers\VoucherController;
+use App\Http\Controllers\PromotionController;
+use App\Http\Controllers\BlogController;
+use App\Http\Controllers\BannerController;
+use App\Http\Controllers\ChatController;
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\WalletController;
+use App\Http\Controllers\AdvertisingController;
+use App\Http\Controllers\CsrfController;
+use App\Http\Middleware\AuthMiddleware;
+use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\ShopMiddleware;
+use App\Http\Middleware\AdminOrShopMiddleware;
 use App\Core\Response;
 use App\Core\JsonResponse;
 
 /** @var Router $router */
 $router = $app['router'];
 
-$router->add('GET','/',function($req){
-    return JsonResponse::ok(['message'=>'Hidden Gems API']);
-});
+// Ensure root (web) routes are also loaded when requiring only api.php (e.g., tests)
+require __DIR__ . '/web.php';
+
+// API routes start here
 
 // Auth
 $router->add('POST','/api/auth/register',[AuthController::class,'register']);

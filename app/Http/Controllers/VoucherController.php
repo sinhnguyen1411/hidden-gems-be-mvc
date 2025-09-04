@@ -1,5 +1,5 @@
 <?php
-namespace App\Controllers;
+namespace App\Http\Controllers;
 
 use App\Core\Request;
 use App\Core\Response;
@@ -7,7 +7,7 @@ use App\Core\JsonResponse;
 use App\Core\Validator;
 use App\Models\Voucher;
 
-class VoucherController
+class VoucherController extends Controller
 {
     public function create(Request $req): Response
     {

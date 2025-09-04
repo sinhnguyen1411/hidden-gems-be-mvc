@@ -1,12 +1,12 @@
 <?php
-namespace App\Controllers;
+namespace App\Http\Controllers;
 
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\JsonResponse;
 use App\Core\DB;
 
-class AdminController
+class AdminController extends Controller
 {
     public function dashboard(Request $req): Response
     {
