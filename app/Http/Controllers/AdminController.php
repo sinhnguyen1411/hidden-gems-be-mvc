@@ -63,4 +63,21 @@ class AdminController extends Controller
             'phone' => $_ENV['CONTACT_PHONE'] ?? null,
         ]);
     }
+
+    public function deleteUser(Request $req): Response
+    {
+        $id = (int)$req->getAttribute('id');
+        if ($id <= 0) {
+            return JsonResponse::ok(['error' => 'Invalid user id'], 422);
+        }
+        try {
+            $ok = \App\Models\User::deleteById($id);
+        } catch (\PDOException $e) {
+            if ($e->getCode() === '23000') { // integrity constraint violation
+                return JsonResponse::ok(['error' => 'Cannot delete user due to related data'], 409);
+            }
+            throw $e;
+        }
+        return JsonResponse::ok(['message' => $ok ? 'Deleted' : 'No changes']);
+    }
 }

@@ -79,4 +79,22 @@ class AuthController extends Controller
     {
         return JsonResponse::ok(['data'=>User::all()]);
     }
+
+    public function deleteMe(Request $req): Response
+    {
+        $claims = $req->getAttribute('user', []);
+        $id = (int)($claims['uid'] ?? 0);
+        if ($id <= 0) {
+            return JsonResponse::ok(['error' => 'Unauthorized'], 401);
+        }
+        try {
+            $ok = User::deleteById($id);
+        } catch (\PDOException $e) {
+            if ($e->getCode() === '23000') {
+                return JsonResponse::ok(['error' => 'Cannot delete user due to related data'], 409);
+            }
+            throw $e;
+        }
+        return JsonResponse::ok(['message' => $ok ? 'Deleted' : 'No changes']);
+    }
 }

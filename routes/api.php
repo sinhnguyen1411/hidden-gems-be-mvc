@@ -34,6 +34,7 @@ $router->add('POST','/api/auth/register',[AuthController::class,'register']);
 $router->add('POST','/api/auth/login',[AuthController::class,'login']);
 $router->add('POST','/api/auth/refresh',[AuthController::class,'refresh']);
 $router->add('GET','/api/users',[AuthController::class,'users'],[AuthMiddleware::class,AdminMiddleware::class]);
+$router->add('DELETE','/api/me',[AuthController::class,'deleteMe'],[AuthMiddleware::class]);
 
 // Stores (cafes)
 $router->add('GET','/api/cafes',[CafeController::class,'index']);
@@ -81,6 +82,7 @@ $router->add('GET','/api/chat/conversations',[ChatController::class,'conversatio
 // Admin & Contact
 $router->add('GET','/api/admin/dashboard',[AdminController::class,'dashboard'],[AuthMiddleware::class, AdminMiddleware::class]);
 $router->add('POST','/api/admin/users/role',[AdminController::class,'setRole'],[AuthMiddleware::class, AdminMiddleware::class]);
+$router->add('DELETE','/api/admin/users/{id}',[AdminController::class,'deleteUser'],[AuthMiddleware::class, AdminMiddleware::class]);
 $router->add('GET','/api/admin/pending-stores',[AdminController::class,'pendingStores'],[AuthMiddleware::class, AdminMiddleware::class]);
 $router->add('POST','/api/admin/stores/{id}/approve',[AdminController::class,'approveStore'],[AuthMiddleware::class, AdminMiddleware::class]);
 $router->add('GET','/api/contact',[AdminController::class,'contact']);

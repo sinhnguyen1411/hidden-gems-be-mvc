@@ -52,4 +52,10 @@ class User
         $stmt = DB::pdo()->query('SELECT id_user, username, email, full_name, role, phone_number, joined_at FROM users');
         return $stmt->fetchAll();
     }
+
+    public static function deleteById(int $id): bool
+    {
+        $stmt = DB::pdo()->prepare('DELETE FROM users WHERE id_user=?');
+        return $stmt->execute([$id]);
+    }
 }
