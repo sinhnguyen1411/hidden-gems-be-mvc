@@ -39,6 +39,58 @@ REST API backend for the Hidden Gems app. Lightweight PHP stack with a Laravel�
    - Metrics (Prometheus): `GET /metrics` (text/plain, v0.0.4)
    - API Docs (Swagger UI): open `http://127.0.0.1:8000/docs/`
 
+## Directory Tree
+
+```
+.
+|-- app/
+|   |-- Core/
+|   |-- Http/
+|   |   |-- Controllers/        # API controllers
+|   |   `-- Middleware/         # Request middlewares
+|   |-- Controllers/            # Legacy/shared controllers
+|   |-- Middlewares/            # Legacy/shared middlewares
+|   |-- Models/                 # PDO models
+|   `-- Security/               # JWT, hashing, policies
+|-- bootstrap/
+|   `-- app.php                 # App bootstrap & container
+|-- database/
+|   |-- migrations/
+|   |   |-- 2025_09_10_000000_schema.sql
+|   |   |-- migrate.php
+|   |   `-- migrator.php
+|   `-- seeders/
+|       `-- seed.php
+|-- docker/
+|   |-- nginx/
+|   `-- php/
+|-- docs/
+|   `-- postman_collection.json
+|-- public/
+|   |-- index.php
+|   `-- docs/
+|       |-- index.html
+|       `-- openapi.yaml
+|-- routes/
+|   |-- api.php
+|   `-- web.php
+|-- scripts/
+|   |-- smoke.ps1
+|   |-- backup.ps1
+|   `-- backup.sh
+|-- tests/
+|   |-- run.php
+|   |-- TestCase.php
+|   |-- RootRouteTest.php
+|   |-- AuthTest.php
+|   `-- ValidatorTest.php
+|-- vendor/
+|-- .env.example
+|-- docker-compose.yml
+|-- composer.json
+`-- README.md
+```
+
 ## Database
 - Versioned migrator (recommended):
   - Up: `php database/migrations/migrator.php up`
@@ -225,6 +277,29 @@ Production pointers:
 - CORS headers are sent on all responses; configure origin via `.env`.
 - CSRF (optional): enable with `CSRF_ENABLED=1`; fetch at `GET /api/csrf-token`; send token via header or body for mutating requests.
 
+### HTTP
+- `app/Core/Request.php` — Base HTTP request container and parser.
+  - Captures from globals via `Request::capture()` and decides subtype based on `Content-Type`.
+  - Fields: `method`, `uri`, `headers`, `query`, `body`, `files`; plus per-request `attributes`.
+  - Helpers: `getString`, `getInt`, `getBool`, `sanitizeArray`, `getHeaderLine`, `getQueryParams`, `getParsedBody`, `getUploadedFiles`, `withAttribute`, `getAttribute`, `isJson`, `hasJsonError`.
+- `app/Core/JsonRequest.php` — Specialized request for JSON.
+  - Chosen when `Content-Type` includes `application/json`.
+  - Parses `php://input` as JSON; invalid JSON sets `hasJsonError()` to true so router returns `400`.
+- `app/Core/FormRequest.php` — Specialized request for form/multipart.
+  - Chosen for non-JSON requests.
+  - Populates `body` from `$_POST` and `files` from `$_FILES`.
+- `app/Core/Response.php` — HTTP response builder.
+  - Methods: `json`, `raw`, `jsonError`, `paginated`, `withHeader`, `withStatus`, `send`, `getBody`, `setBody`, `getStatus`.
+  - Behavior: for `HEAD` requests, `send()` omits the body (status + headers only).
+- `app/Core/JsonResponse.php` — Convenience JSON wrapper.
+  - Factories: `ok($data, $status=200)` and `error($message, $status=400, $details=null)`.
+  - Used across controllers to standardize success/error payloads.
+
+Where used
+- `public/index.php` calls `Request::capture()` before routing.
+- Controllers return `JsonResponse::ok()` / `JsonResponse::error()`; unknown routes and exceptions fall back to `Response->json()`.
+- Note: `app/Models/AdRequest.php` is a domain model (advertising request), not an HTTP Request.
+
 ### Security & Throttling
 - Login rate limit: `RATE_LIMIT_LOGIN_MAX` attempts per `RATE_LIMIT_LOGIN_WINDOW` seconds, per identifier+IP.
 - Refresh tokens: rotation on refresh; optional binding to UA/IP (`REFRESH_BIND_UA`, `REFRESH_BIND_IP`).
@@ -245,6 +320,16 @@ Production pointers:
 - Uploads → CDN: set `UPLOADS_URL_BASE` to CDN origin (and optionally mount a cloud bucket to `UPLOADS_PATH`) so returned file URLs point to CDN.
 - Pagination guards: controllers clamp `per_page` to sensible limits (e.g., 50) to avoid heavy queries.
  - Debug headers: enable `CACHE_DEBUG_HEADER=1` to send `X-Cache: HIT|MISS` (and optional `X-Cache-Keys` with `CACHE_DEBUG_HEADER_KEYS=1`) for cache verification.
+
+#### Redis Cache (Purpose & Usage)
+- Purpose: reduce database load and latency for read‑heavy endpoints.
+- What we cache: banners list, admin dashboard summary, currently active ads, and aggregated search results.
+  - Controllers: `BannerController`, `AdminController`, `AdvertisingController`, `SearchController`.
+- How it works: `App\Core\Cache` prefers Redis (via `REDIS_URL` or `REDIS_HOST`/`REDIS_PORT`/`REDIS_PASSWORD`), and transparently falls back to file cache if Redis is unavailable.
+- TTL controls (seconds): `BANNERS_CACHE_TTL` (default 60), `DASHBOARD_CACHE_TTL` (30), `ADS_ACTIVE_CACHE_TTL` (30), `SEARCH_CACHE_TTL` (15).
+- Key patterns (examples): `banners:list:{pos}:{active}`, `admin:dashboard`, `ads:active:{when}`, `search:{domain}:{q}:{per}`.
+- Verify behavior: enable `CACHE_DEBUG_HEADER=1` to see `X-Cache: HIT|MISS` (and optionally `X-Cache-Keys` with `CACHE_DEBUG_HEADER_KEYS=1`).
+- Not the same as HTTP caching: ETag/Cache‑Control is client‑side; Redis/file cache is server‑side and applies before querying the database.
 
 
 ### Email
