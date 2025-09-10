@@ -47,6 +47,10 @@ class WalletController extends Controller
 
     public function simulateBankTransfer(Request $req): Response
     {
+        // Gate this demo endpoint by env flag (disabled in production)
+        if (empty($_ENV['ENABLE_BANK_SIMULATION'])) {
+            return JsonResponse::error('Not found', 404);
+        }
         // Demo endpoint to simulate bank webhook: expects {noi_dung, so_tien}
         $data = $req->getParsedBody();
         $content = trim($data['noi_dung'] ?? '');

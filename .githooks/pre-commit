@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+changed=$(git diff --cached --name-only --diff-filter=ACM | tr '\n' ' ')
+phpfiles=$(echo "$changed" | tr ' ' '\n' | grep -E '\.php$' || true)
+
+if [ -n "$phpfiles" ]; then
+  echo "[pre-commit] PHP syntax check"
+  echo "$phpfiles" | xargs -r -n1 -P4 php -l >/dev/null
+fi
+
+if [ -f composer.json ]; then
+  echo "[pre-commit] Running unit tests"
+  composer test || { echo "Tests failed"; exit 1; }
+fi
+
+echo "[pre-commit] OK"
+

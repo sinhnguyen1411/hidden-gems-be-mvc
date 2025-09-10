@@ -20,6 +20,14 @@ class User
         return $row ?: null;
     }
 
+    public static function findById(int $id): ?array
+    {
+        $stmt = DB::pdo()->prepare('SELECT * FROM users WHERE id_user = ? LIMIT 1');
+        $stmt->execute([$id]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     public static function create(string $username, string $email, string $passwordHash, string $role='customer', string $fullName=null, string $phoneNumber=null): int
     {
         $allowed = ['admin','shop','customer'];

@@ -1,0 +1,12 @@
+vendor
+node_modules
+.git
+.github
+storage
+docker/nginx/certs/*.key
+docker/nginx/certs/*.crt
+docker/nginx/certs/*.pem
+.env
+*.log
+*.DS_Store
+Thumbs.db

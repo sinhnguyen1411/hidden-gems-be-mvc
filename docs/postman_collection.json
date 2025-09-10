@@ -1,0 +1,28 @@
+{
+  "info": {
+    "name": "Hidden Gems API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "00000000-0000-0000-0000-000000000000"
+  },
+  "item": [
+    {
+      "name": "Root",
+      "request": { "method": "GET", "url": "{{BASE_URL}}/" }
+    },
+    {
+      "name": "Auth - Login",
+      "request": {
+        "method": "POST",
+        "header": [ {"key":"Content-Type","value":"application/json"} ],
+        "body": { "mode":"raw", "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"admin123\"\n}" },
+        "url": "{{BASE_URL}}/api/auth/login"
+      }
+    },
+    {
+      "name": "Cafes - List",
+      "request": { "method": "GET", "url": "{{BASE_URL}}/api/cafes" }
+    }
+  ],
+  "variable": [ { "key": "BASE_URL", "value": "http://127.0.0.1:8000" } ]
+}
+

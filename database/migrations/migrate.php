@@ -1,5 +1,5 @@
 <?php
-// Migration script: drops and recreates the target DB, then applies all SQL files in this folder.
+// Migration script for development resets. In production, use migrator.php (versioned).
 
 use Dotenv\Dotenv;
 use App\Core\DB;
@@ -29,10 +29,18 @@ $server = new PDO($serverDsn, $user, $pass, [
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
 ]);
 
-echo "⚙️  Dropping database if exists: {$db}\n";
-$server->exec("DROP DATABASE IF EXISTS `{$db}`;");
-echo "🧱 Creating database: {$db}\n";
-$server->exec("CREATE DATABASE `{$db}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");
+$env    = $_ENV['APP_ENV'] ?? 'local';
+$allowDrop = (($_ENV['MIGRATE_ALLOW_DROP'] ?? '') === '1') || in_array('--drop', $argv, true);
+if ($env === 'production' && $allowDrop) {
+    fwrite(STDERR, "Refusing to DROP in production. Remove --drop or set MIGRATE_ALLOW_DROP=0.\n");
+    $allowDrop = false;
+}
+if ($allowDrop) {
+    echo "⚠️  Dropping database: {$db}\n";
+    $server->exec("DROP DATABASE IF EXISTS `{$db}`;");
+}
+echo "🧱 Ensuring database exists: {$db}\n";
+$server->exec("CREATE DATABASE IF NOT EXISTS `{$db}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");
 
 // 2) Initialize app DB connection (now that DB exists)
 DB::init([
@@ -45,12 +53,19 @@ DB::init([
 ]);
 $pdo = DB::pdo();
 
-// 3) Apply all *.sql files in this folder in filename order
-$migrationFiles = glob(__DIR__ . '/*.sql');
-sort($migrationFiles);
-foreach ($migrationFiles as $file) {
-    $sql = file_get_contents($file);
-    $pdo->exec($sql);
-    echo "✅ Executed migration: " . basename($file) . "\n";
+// 3) If dropping, apply baseline .sql files; otherwise only apply versioned ups
+if ($allowDrop) {
+    $migrationFiles = array_values(array_filter(glob(__DIR__ . '/*.sql'), function($f){
+        return !str_ends_with($f, '.up.sql') && !str_ends_with($f, '.down.sql');
+    }));
+    sort($migrationFiles);
+    foreach ($migrationFiles as $file) {
+        $sql = file_get_contents($file);
+        $pdo->exec($sql);
+        echo "✅ Executed baseline: " . basename($file) . "\n";
+    }
+    echo "🎉 Baseline migrations executed!\n";
 }
-echo "🎉 All migrations executed!\n";
+
+// 4) Apply versioned up migrations
+require __DIR__ . '/migrator.php';

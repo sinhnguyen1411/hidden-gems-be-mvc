@@ -1,0 +1,910 @@
+openapi: 3.0.3
+info:
+  title: Hidden Gems API
+  version: 1.0.0
+  description: REST API for Hidden Gems app
+tags:
+  - name: Auth
+  - name: Users
+  - name: Stores
+  - name: Reviews
+  - name: Vouchers
+  - name: Promotions
+  - name: Blog
+  - name: Banners
+  - name: Chat
+  - name: Wallet
+  - name: Ads
+  - name: Admin
+  - name: Policies
+  - name: Ops
+servers:
+  - url: http://127.0.0.1:8000
+  - url: https://localhost
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+        password:
+          type: string
+      required: [password]
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+    Cafe:
+      type: object
+      properties:
+        id_cua_hang: { type: integer }
+        id_cua_hang_cha: { type: integer, nullable: true }
+        id_chu_so_huu: { type: integer }
+        ten_cua_hang: { type: string }
+        mo_ta: { type: string, nullable: true }
+        diem_danh_gia_trung_binh: { type: number, format: float }
+        luot_xem: { type: integer }
+        id_trang_thai: { type: integer, nullable: true }
+        id_vi_tri: { type: integer, nullable: true }
+        ngay_tao: { type: string, format: date-time }
+      example:
+        id_cua_hang: 1
+        id_cua_hang_cha: null
+        id_chu_so_huu: 2
+        ten_cua_hang: Hidden Gem
+        mo_ta: Quan ca phe thu vi
+        diem_danh_gia_trung_binh: 4.8
+        luot_xem: 1234
+        id_trang_thai: 2
+        id_vi_tri: 1
+        ngay_tao: "2025-01-01T00:00:00Z"
+    CafeListData:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Cafe' }
+        total: { type: integer }
+        page: { type: integer }
+        per_page: { type: integer }
+      example:
+        items:
+          - { id_cua_hang: 1, id_cua_hang_cha: null, id_chu_so_huu: 2, ten_cua_hang: Hidden Gem, mo_ta: Quan ca phe thu vi, diem_danh_gia_trung_binh: 4.8, luot_xem: 1234, id_trang_thai: 2, id_vi_tri: 1, ngay_tao: "2025-01-01T00:00:00Z" }
+        total: 1
+        page: 1
+        per_page: 10
+    CafeListResponse:
+      type: object
+      properties:
+        data: { $ref: '#/components/schemas/CafeListData' }
+      example:
+        data:
+          items:
+            - { id_cua_hang: 1, id_cua_hang_cha: null, id_chu_so_huu: 2, ten_cua_hang: Hidden Gem, mo_ta: Quan ca phe thu vi, diem_danh_gia_trung_binh: 4.8, luot_xem: 1234, id_trang_thai: 2, id_vi_tri: 1, ngay_tao: "2025-01-01T00:00:00Z" }
+          total: 1
+          page: 1
+          per_page: 10
+    Banner:
+      type: object
+      properties:
+        id_banner: { type: integer }
+        tieu_de: { type: string, nullable: true }
+        mo_ta: { type: string, nullable: true }
+        url_anh: { type: string }
+        link_url: { type: string, nullable: true }
+        vi_tri: { type: string, nullable: true }
+        thu_tu: { type: integer }
+        active: { type: boolean }
+        thoi_gian_tao: { type: string, format: date-time }
+      example:
+        id_banner: 1
+        tieu_de: Welcome
+        mo_ta: Intro banner
+        url_anh: https://cdn.example.com/banners/abc.jpg
+        link_url: https://example.com
+        vi_tri: home_top
+        thu_tu: 0
+        active: true
+        thoi_gian_tao: "2025-01-01T00:00:00Z"
+    BannersListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Banner' }
+      example:
+        data:
+          - { id_banner: 1, tieu_de: Welcome, mo_ta: Intro banner, url_anh: https://cdn.example.com/banners/abc.jpg, link_url: https://example.com, vi_tri: home_top, thu_tu: 0, active: true, thoi_gian_tao: "2025-01-01T00:00:00Z" }
+    AdminDashboardData:
+      type: object
+      properties:
+        users: { type: integer }
+        shops: { type: integer }
+        stores: { type: integer }
+        reviews: { type: integer }
+        vouchers: { type: integer }
+        promos: { type: integer }
+      example: { users: 100, shops: 10, stores: 50, reviews: 200, vouchers: 5, promos: 3 }
+    AdminDashboardResponse:
+      type: object
+      properties:
+        data: { $ref: '#/components/schemas/AdminDashboardData' }
+      example:
+        data: { users: 100, shops: 10, stores: 50, reviews: 200, vouchers: 5, promos: 3 }
+paths:
+  /:
+    get:
+      summary: API root
+      responses:
+        '200': { description: OK }
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login with email or username
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+  /api/auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token (rotates refresh token)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token: { type: string }
+              required: [refresh_token]
+      responses: { '200': { description: OK } }
+  /api/cafes:
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username: { type: string }
+                email: { type: string, format: email }
+                password: { type: string, minLength: 6 }
+              required: [username,email,password]
+      responses: { '201': { description: Created } }
+
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout (revoke refresh token)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token: { type: string }
+      responses: { '200': { description: OK } }
+
+  /api/auth/forgot-password:
+    post:
+      tags: [Auth]
+      summary: Request password reset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, format: email }
+              required: [email]
+      responses: { '200': { description: OK } }
+
+  /api/auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: Reset password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token: { type: string }
+                new_password: { type: string, minLength: 6 }
+              required: [token,new_password]
+      responses: { '200': { description: OK } }
+
+  /api/auth/change-password:
+    post:
+      tags: [Auth]
+      summary: Change password
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                current_password: { type: string }
+                new_password: { type: string, minLength: 6 }
+              required: [current_password,new_password]
+      responses: { '200': { description: OK } }
+
+  /api/auth/verify-email/request:
+    post:
+      tags: [Auth]
+      summary: Request email verification token
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /api/auth/verify-email/confirm:
+    post:
+      tags: [Auth]
+      summary: Confirm email verification token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token: { type: string }
+              required: [token]
+      responses: { '200': { description: OK } }
+
+  /api/me/profile:
+    get:
+      tags: [Users]
+      summary: Get profile
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+    patch:
+      tags: [Users]
+      summary: Update profile
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                full_name: { type: string }
+                phone_number: { type: string }
+                email: { type: string, format: email }
+      responses: { '200': { description: OK } }
+
+  /api/me/consent:
+    post:
+      tags: [Users]
+      summary: Record user consent
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                terms_version: { type: string }
+                privacy_version: { type: string }
+      responses: { '200': { description: OK } }
+
+  /api/me/export:
+    get:
+      tags: [Users]
+      summary: Export user data
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /api/cafes:
+    get:
+      tags: [Stores]
+      summary: List stores
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1 }
+        - in: query
+          name: per_page
+          schema: { type: integer, minimum: 1, maximum: 50 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CafeListResponse' }
+  /api/cafes/search:
+    get:
+      tags: [Stores]
+      summary: Search stores by name
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: { type: string }
+      responses: { '200': { description: OK } }
+
+  /api/cafes/{id}:
+    get:
+      tags: [Stores]
+      summary: Store detail
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses: { '200': { description: OK } }
+
+  /api/cafes/{id}/reviews:
+    get:
+      tags: [Reviews]
+      summary: List reviews for a store
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Reviews]
+      summary: Create review (auth)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rating: { type: integer, minimum: 1, maximum: 5 }
+                content: { type: string }
+              required: [rating, content]
+      responses: { '201': { description: Created } }
+
+  /api/stores:
+    post:
+      tags: [Stores]
+      summary: Create store (shop)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ten_cua_hang: { type: string }
+                mo_ta: { type: string }
+      responses: { '201': { description: Created } }
+
+  /api/stores/{id}:
+    patch:
+      tags: [Stores]
+      summary: Update store (owner/admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses: { '200': { description: OK } }
+
+  /api/me/stores:
+    get:
+      tags: [Stores]
+      summary: List my stores (auth)
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /api/stores/{id}/images:
+    post:
+      tags: [Stores]
+      summary: Upload store image (auth)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: { type: string, format: binary }
+                is_avatar: { type: integer }
+              required: [file]
+      responses: { '201': { description: Created } }
+
+  /api/search:
+    get:
+      tags: [Stores]
+      summary: Global search across categories
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: { type: string }
+      responses: { '200': { description: OK } }
+  /api/csrf-token:
+    get:
+      tags: [Ops]
+      summary: Issue CSRF token (also sets cookie)
+      responses: { '200': { description: OK } }
+  /health:
+    get: { tags: [Ops], summary: Liveness, responses: { '200': { description: OK } } }
+  /ready:
+    get: { tags: [Ops], summary: Readiness (DB ping), responses: { '200': { description: Ready }, '500': { description: Not ready } } }
+security:
+  - bearerAuth: []
+  /api/vouchers:
+    post:
+      tags: [Vouchers]
+      summary: Create voucher (admin/shop)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ma_voucher: { type: string }
+                ten_voucher: { type: string }
+                gia_tri_giam: { type: number }
+                loai_giam_gia: { type: string, enum: [percent, amount] }
+                ngay_het_han: { type: string, format: date-time }
+                so_luong_con_lai: { type: integer }
+              required: [ma_voucher, gia_tri_giam, loai_giam_gia]
+      responses: { '201': { description: Created } }
+
+  /api/vouchers/assign:
+    post:
+      tags: [Vouchers]
+      summary: Assign voucher to store (admin/shop)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id_voucher: { type: integer }
+                id_cua_hang: { type: integer }
+              required: [id_voucher, id_cua_hang]
+      responses: { '200': { description: OK } }
+
+  /api/stores/{id}/vouchers:
+    get:
+      tags: [Vouchers]
+      summary: List vouchers by store
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses: { '200': { description: OK } }
+
+  /api/promotions:
+    post:
+      tags: [Promotions]
+      summary: Create promotion (admin)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ten_chuong_trinh: { type: string }
+                mo_ta: { type: string }
+                ngay_bat_dau: { type: string, format: date-time }
+                ngay_ket_thuc: { type: string, format: date-time }
+              required: [ten_chuong_trinh, ngay_bat_dau, ngay_ket_thuc]
+      responses: { '201': { description: Created } }
+
+  /api/promotions/{id}/apply:
+    post:
+      tags: [Promotions]
+      summary: Apply store to promotion (shop)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id_cua_hang: { type: integer }
+              required: [id_cua_hang]
+      responses: { '200': { description: OK } }
+
+  /api/promotions/{id}/review:
+    post:
+      tags: [Promotions]
+      summary: Review promotion application (admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id_cua_hang: { type: integer }
+                trang_thai: { type: string, enum: [da_duyet, tu_choi] }
+              required: [id_cua_hang, trang_thai]
+      responses: { '200': { description: OK } }
+
+  /api/stores/{id}/promotions:
+    get:
+      tags: [Promotions]
+      summary: List promotions by store
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses: { '200': { description: OK } }
+
+  /api/blog:
+    get:
+      tags: [Blog]
+      summary: List/search blog posts
+      parameters:
+        - in: query
+          name: q
+          required: false
+          schema: { type: string }
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Blog]
+      summary: Create blog post (admin)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tieu_de: { type: string }
+                noi_dung: { type: string }
+              required: [tieu_de, noi_dung]
+      responses: { '201': { description: Created } }
+
+  /api/blog/{id}:
+    patch:
+      tags: [Blog]
+      summary: Update blog post (admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tieu_de: { type: string }
+                noi_dung: { type: string }
+              required: [tieu_de, noi_dung]
+      responses: { '200': { description: OK } }
+
+  /api/banners:
+    get:
+      tags: [Banners]
+      summary: List banners
+      parameters:
+        - in: query
+          name: vi_tri
+          schema: { type: string }
+        - in: query
+          name: active
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BannersListResponse' }
+    post:
+      tags: [Banners]
+      summary: Create banner (admin)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tieu_de: { type: string }
+                url_anh: { type: string }
+                link_url: { type: string }
+                vi_tri: { type: string }
+                thu_tu: { type: integer }
+                active: { type: integer }
+              required: [url_anh]
+      responses: { '201': { description: Created } }
+
+  /api/banners/{id}:
+    patch:
+      tags: [Banners]
+      summary: Update banner (admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses: { '200': { description: OK } }
+
+  /api/chat/send:
+    post:
+      tags: [Chat]
+      summary: Send a direct message (auth)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                noi_dung: { type: string }
+                to_user_id: { type: integer }
+              required: [noi_dung]
+      responses: { '201': { description: Created } }
+
+  /api/chat/messages:
+    get:
+      tags: [Chat]
+      summary: List messages (auth)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: with
+          schema: { type: integer }
+        - in: query
+          name: limit
+          schema: { type: integer }
+        - in: query
+          name: offset
+          schema: { type: integer }
+      responses: { '200': { description: OK } }
+
+  /api/chat/conversations:
+    get:
+      tags: [Chat]
+      summary: List conversations (auth)
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /api/me/wallet:
+    get:
+      tags: [Wallet]
+      summary: Get my wallet balance (auth)
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /api/me/wallet/history:
+    get:
+      tags: [Wallet]
+      summary: Wallet transactions (auth)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer }
+        - in: query
+          name: offset
+          schema: { type: integer }
+      responses: { '200': { description: OK } }
+
+  /api/me/wallet/deposit-instructions:
+    get:
+      tags: [Wallet]
+      summary: Deposit instructions (auth)
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /api/simulate/bank-transfer:
+    post:
+      tags: [Wallet]
+      summary: Simulated bank webhook (dev)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                noi_dung: { type: string }
+                so_tien: { type: number }
+              required: [noi_dung, so_tien]
+      responses: { '201': { description: Created } }
+
+  /api/ads/packages:
+    get:
+      tags: [Ads]
+      summary: Advertising packages
+      responses: { '200': { description: OK } }
+
+  /api/ads/requests:
+    post:
+      tags: [Ads]
+      summary: Create ad request (shop)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id_cua_hang: { type: integer }
+                goi: { type: string }
+                ngay_bat_dau: { type: string, format: date }
+              required: [id_cua_hang, goi]
+      responses: { '201': { description: Created } }
+
+  /api/ads/requests/my:
+    get:
+      tags: [Ads]
+      summary: My ad requests (auth)
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /api/ads/active:
+    get:
+      tags: [Ads]
+      summary: Active ads
+      responses: { '200': { description: OK } }
+
+  /api/admin/ads/requests/pending:
+    get:
+      tags: [Admin]
+      summary: Pending ad requests (admin)
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /api/admin/ads/requests/{id}/review:
+    post:
+      tags: [Admin]
+      summary: Review ad request (admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                trang_thai: { type: string, enum: [da_duyet, tu_choi] }
+              required: [trang_thai]
+      responses: { '200': { description: OK } }
+
+  /api/admin/dashboard:
+    get:
+      tags: [Admin]
+      summary: Admin dashboard
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminDashboardResponse' }
+
+  /api/admin/users/role:
+    post:
+      tags: [Admin]
+      summary: Set user role (admin)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id_user: { type: integer }
+                role: { type: string, enum: [admin, shop, customer] }
+              required: [id_user, role]
+      responses: { '200': { description: OK } }
+
+  /api/admin/users/{id}:
+    delete:
+      tags: [Admin]
+      summary: Delete user (admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses: { '200': { description: OK } }
+
+  /api/admin/pending-stores:
+    get:
+      tags: [Admin]
+      summary: Pending stores (admin)
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /api/admin/stores/{id}/approve:
+    post:
+      tags: [Admin]
+      summary: Approve/reject store (admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action: { type: string, enum: [approve, reject] }
+              required: [action]
+      responses: { '200': { description: OK } }

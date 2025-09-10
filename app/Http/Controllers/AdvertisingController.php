@@ -121,6 +121,10 @@ class AdvertisingController extends Controller
         }
 
         $ok = AdRequest::review($id,$status,$adminId);
+        // Audit log
+        $meta = json_encode(['status'=>$status], JSON_UNESCAPED_UNICODE);
+        \App\Core\DB::pdo()->prepare('INSERT INTO audit_log(actor_user_id, action, target_type, target_id, meta) VALUES (?,?,?,?,?)')
+            ->execute([$adminId,'review_ad','ad_request',$id,$meta]);
         return JsonResponse::ok(['message'=>$ok?'Updated':'No changes']);
     }
 
@@ -133,7 +137,11 @@ class AdvertisingController extends Controller
         } catch (\Throwable $e) {
             $dt = new \DateTime();
         }
-        $rows = AdRequest::listActiveAt($dt->format('Y-m-d H:i:s'));
+        $when = $dt->format('Y-m-d H:i:s');
+        $ttl = (int)($_ENV['ADS_ACTIVE_CACHE_TTL'] ?? 30);
+        $rows = \App\Core\Cache::remember('ads:active:'.$when, $ttl, function() use ($when){
+            return AdRequest::listActiveAt($when);
+        });
         return JsonResponse::ok(['data'=>$rows]);
     }
 }

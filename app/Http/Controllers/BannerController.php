@@ -14,7 +14,11 @@ class BannerController extends Controller
         $q = $req->getQueryParams();
         $pos = $q['vi_tri'] ?? null;
         $active = !isset($q['active']) || (int)$q['active'] === 1;
-        $rows = Banner::list($pos,$active);
+        $ttl = (int)($_ENV['BANNERS_CACHE_TTL'] ?? 60);
+        $cacheKey = 'banners:list:' . ($pos ?: '_all') . ':' . ($active ? '1':'0');
+        $rows = \App\Core\Cache::remember($cacheKey, $ttl, function() use ($pos,$active){
+            return Banner::list($pos,$active);
+        });
         return JsonResponse::ok(['data'=>$rows]);
     }
 

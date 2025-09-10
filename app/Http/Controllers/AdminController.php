@@ -10,14 +10,18 @@ class AdminController extends Controller
 {
     public function dashboard(Request $req): Response
     {
-        $pdo = DB::pdo();
-        $users = (int)$pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
-        $shops = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE role='shop'")->fetchColumn();
-        $stores = (int)$pdo->query("SELECT COUNT(*) FROM cua_hang")->fetchColumn();
-        $reviews = (int)$pdo->query("SELECT COUNT(*) FROM danh_gia")->fetchColumn();
-        $vouchers = (int)$pdo->query("SELECT COUNT(*) FROM voucher")->fetchColumn();
-        $promos = (int)$pdo->query("SELECT COUNT(*) FROM khuyen_mai")->fetchColumn();
-        return JsonResponse::ok(['data'=>compact('users','shops','stores','reviews','vouchers','promos')]);
+        $ttl = (int)($_ENV['DASHBOARD_CACHE_TTL'] ?? 30);
+        $data = \App\Core\Cache::remember('admin:dashboard', $ttl, function(){
+            $pdo = DB::pdo();
+            $users = (int)$pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
+            $shops = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE role='shop'")->fetchColumn();
+            $stores = (int)$pdo->query("SELECT COUNT(*) FROM cua_hang")->fetchColumn();
+            $reviews = (int)$pdo->query("SELECT COUNT(*) FROM danh_gia")->fetchColumn();
+            $vouchers = (int)$pdo->query("SELECT COUNT(*) FROM voucher")->fetchColumn();
+            $promos = (int)$pdo->query("SELECT COUNT(*) FROM khuyen_mai")->fetchColumn();
+            return compact('users','shops','stores','reviews','vouchers','promos');
+        });
+        return JsonResponse::ok(['data'=>$data]);
     }
 
     public function setRole(Request $req): Response
@@ -28,8 +32,18 @@ class AdminController extends Controller
         if ($userId<=0 || !in_array($role,['admin','shop','customer'],true)) {
             return JsonResponse::ok(['error'=>'Invalid input'],422);
         }
+        // Audit old role
+        $old = DB::pdo()->prepare('SELECT role FROM users WHERE id_user=?');
+        $old->execute([$userId]);
+        $prev = $old->fetch();
         $stmt = DB::pdo()->prepare('UPDATE users SET role=? WHERE id_user=?');
         $stmt->execute([$role,$userId]);
+        // Write audit log
+        $actor = $req->getAttribute('user', []);
+        $actorId = (int)($actor['uid'] ?? 0);
+        $meta = json_encode(['from'=>$prev['role'] ?? null, 'to'=>$role], JSON_UNESCAPED_UNICODE);
+        DB::pdo()->prepare('INSERT INTO audit_log(actor_user_id, action, target_type, target_id, meta) VALUES (?,?,?,?,?)')
+            ->execute([$actorId,'set_role','user',$userId,$meta]);
         return JsonResponse::ok(['message'=>'Role updated']);
     }
 
@@ -51,6 +65,12 @@ class AdminController extends Controller
         $st = $stmt->fetch();
         if (!$st) return JsonResponse::ok(['error'=>'Status not configured'],500);
         $ok = DB::pdo()->prepare('UPDATE cua_hang SET id_trang_thai=? WHERE id_cua_hang=?')->execute([(int)$st['id_trang_thai'],$id]);
+        // Audit log
+        $actor = $req->getAttribute('user', []);
+        $actorId = (int)($actor['uid'] ?? 0);
+        $meta = json_encode(['action'=>$action, 'status'=>$statusName], JSON_UNESCAPED_UNICODE);
+        DB::pdo()->prepare('INSERT INTO audit_log(actor_user_id, action, target_type, target_id, meta) VALUES (?,?,?,?,?)')
+            ->execute([$actorId,'approve_store','store',$id,$meta]);
         return JsonResponse::ok(['message'=>$ok?'Updated':'No changes']);
     }
 

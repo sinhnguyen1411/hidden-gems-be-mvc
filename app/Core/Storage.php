@@ -7,7 +7,8 @@ class Storage
     {
         // app/Core => project root is two levels up
         $root = dirname(__DIR__, 2);
-        $path = $root . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads';
+        $base = $_ENV['UPLOADS_PATH'] ?? ($root . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads');
+        $path = $base;
         if (!is_dir($path)) {
             @mkdir($path, 0775, true);
         }
@@ -44,6 +45,19 @@ class Storage
         if ($lowerExt && !in_array($lowerExt, $allowedExt, true)) {
             throw new \RuntimeException('Unsupported file type');
         }
+
+        // MIME sniffing with finfo for additional safety
+        $allowedMime = array_filter(array_map('trim', explode(',', $_ENV['UPLOAD_ALLOWED_MIME'] ?? 'image/jpeg,image/png,image/gif,image/webp')));
+        if (function_exists('finfo_open') && isset($file['tmp_name']) && is_file($file['tmp_name'])) {
+            $f = finfo_open(FILEINFO_MIME_TYPE);
+            if ($f) {
+                $mime = finfo_file($f, $file['tmp_name']);
+                finfo_close($f);
+                if ($mime && $allowedMime && !in_array(strtolower($mime), array_map('strtolower',$allowedMime), true)) {
+                    throw new \RuntimeException('Unsupported MIME type');
+                }
+            }
+        }
         $basename = bin2hex(random_bytes(8));
         $dir = self::uploadsPath();
         if ($subdir) {
@@ -60,9 +74,25 @@ class Storage
                 throw new \RuntimeException('Failed to save upload');
             }
         }
-        $urlBase = rtrim($_ENV['APP_URL'] ?? '', '/');
-        $rel = '/uploads' . ($subdir ? '/' . trim($subdir, '/\\') : '') . '/' . $filename;
-        $url = $urlBase ? ($urlBase . $rel) : $rel;
+
+        // Optional antivirus scan hook (placeholder)
+        if (!empty($_ENV['UPLOAD_AV_SCAN_CMD'])) {
+            $cmd = $_ENV['UPLOAD_AV_SCAN_CMD'] . ' ' . escapeshellarg($dest);
+            @exec($cmd, $out, $code);
+            if ($code !== 0) {
+                @unlink($dest);
+                throw new \RuntimeException('File failed antivirus scan');
+            }
+        }
+        $uploadsBaseUrl = rtrim($_ENV['UPLOADS_URL_BASE'] ?? '', '/');
+        if ($uploadsBaseUrl !== '') {
+            $rel = ($subdir ? '/' . trim($subdir, '/\\') : '') . '/' . $filename;
+            $url = $uploadsBaseUrl . $rel;
+        } else {
+            $urlBase = rtrim($_ENV['APP_URL'] ?? '', '/');
+            $rel = '/uploads' . ($subdir ? '/' . trim($subdir, '/\\') : '') . '/' . $filename;
+            $url = $urlBase ? ($urlBase . $rel) : $rel;
+        }
         return ['path' => $dest, 'url' => $url, 'filename' => $filename, 'original' => $original];
     }
 
@@ -100,9 +130,15 @@ class Storage
         $filename = $basename . ($ext ? ('.' . $ext) : '');
         $dest = $dir . DIRECTORY_SEPARATOR . $filename;
         file_put_contents($dest, $data);
-        $urlBase = rtrim($_ENV['APP_URL'] ?? '', '/');
-        $rel = '/uploads' . ($subdir ? '/' . trim($subdir, '/\\') : '') . '/' . $filename;
-        $url = $urlBase ? ($urlBase . $rel) : $rel;
+        $uploadsBaseUrl = rtrim($_ENV['UPLOADS_URL_BASE'] ?? '', '/');
+        if ($uploadsBaseUrl !== '') {
+            $rel = ($subdir ? '/' . trim($subdir, '/\\') : '') . '/' . $filename;
+            $url = $uploadsBaseUrl . $rel;
+        } else {
+            $urlBase = rtrim($_ENV['APP_URL'] ?? '', '/');
+            $rel = '/uploads' . ($subdir ? '/' . trim($subdir, '/\\') : '') . '/' . $filename;
+            $url = $urlBase ? ($urlBase . $rel) : $rel;
+        }
         return ['path' => $dest, 'url' => $url, 'filename' => $filename];
     }
 

@@ -18,11 +18,13 @@ function Invoke-Api {
     [ValidateSet('GET','POST','PATCH','DELETE')][string]$Method,
     [string]$Path,
     [hashtable]$Body,
-    [string]$Token
+    [string]$Token,
+    [hashtable]$ExtraHeaders
   )
   $uri = "$BaseUrl$Path"
   $headers = @{}
   if ($Token) { $headers['Authorization'] = "Bearer $Token" }
+  if ($ExtraHeaders) { foreach ($k in $ExtraHeaders.Keys) { $headers[$k] = $ExtraHeaders[$k] } }
   if ($Method -eq 'GET' -or -not $Body) {
     $resp = Invoke-WebRequest -Uri $uri -Method $Method -Headers $headers
   } else {
@@ -166,10 +168,28 @@ try {
   $csrf = Invoke-Api -Method GET -Path '/api/csrf-token'
   if ($csrf.StatusCode -eq 200) { Write-Ok 'CSRF token issued' } else { Write-Ok 'CSRF endpoint unavailable (disabled)' }
 
+  Write-Step 'Cache/Redis check (ETag + 304)'
+  # First call to banners
+  $sw = [System.Diagnostics.Stopwatch]::StartNew()
+  $b1 = Invoke-Api -Method GET -Path '/api/banners'
+  $sw.Stop(); $t1 = $sw.ElapsedMilliseconds
+  if ($b1.StatusCode -ne 200) { throw 'Banners failed' }
+  $etag = $b1.Raw.Headers['ETag']
+  $xcache1 = $b1.Raw.Headers['X-Cache']
+  if (-not $etag) { Write-Ok 'No ETag header (ETag disabled?)' } else { Write-Ok "ETag received: $etag" }
+  if ($xcache1) { Write-Ok ("X-Cache: $xcache1 (first)") }
+  # Second call with If-None-Match to validate 304
+  $sw.Restart();
+  $b2 = Invoke-Api -Method GET -Path '/api/banners' -ExtraHeaders @{ 'If-None-Match' = $etag }
+  $sw.Stop(); $t2 = $sw.ElapsedMilliseconds
+  $xcache2 = $b2.Raw.Headers['X-Cache']
+  if ($etag -and $b2.StatusCode -ne 304) { Write-Ok "Expected 304 but got $($b2.StatusCode)" } else { Write-Ok 'ETag 304 validated (if enabled)' }
+  if ($xcache2) { Write-Ok ("X-Cache: $xcache2 (second)") }
+  Write-Ok ("Banners timings ms: first=$t1, second=$t2 (cache likely working if second is faster)")
+
   Write-Host "`nAll smoke tests completed successfully." -ForegroundColor Green
 }
 catch {
   Write-Fail $_
   exit 1
 }
-

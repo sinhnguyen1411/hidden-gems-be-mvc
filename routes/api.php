@@ -14,6 +14,8 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\AdvertisingController;
 use App\Http\Controllers\CsrfController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\PoliciesController;
 use App\Http\Middleware\AuthMiddleware;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\ShopMiddleware;
@@ -24,17 +26,31 @@ use App\Core\JsonResponse;
 /** @var Router $router */
 $router = $app['router'];
 
-// Ensure root (web) routes are also loaded when requiring only api.php (e.g., tests)
-require __DIR__ . '/web.php';
+// API routes start here (web routes loaded by bootstrap/app.php)
 
-// API routes start here
 
 // Auth
 $router->add('POST','/api/auth/register',[AuthController::class,'register']);
 $router->add('POST','/api/auth/login',[AuthController::class,'login']);
 $router->add('POST','/api/auth/refresh',[AuthController::class,'refresh']);
+$router->add('POST','/api/auth/logout',[AuthController::class,'logout'],[AuthMiddleware::class]);
+$router->add('POST','/api/auth/forgot-password',[AuthController::class,'forgotPassword']);
+$router->add('POST','/api/auth/reset-password',[AuthController::class,'resetPassword']);
+$router->add('POST','/api/auth/change-password',[AuthController::class,'changePassword'],[AuthMiddleware::class]);
+$router->add('POST','/api/auth/verify-email/request',[AuthController::class,'requestEmailVerification'],[AuthMiddleware::class]);
+$router->add('POST','/api/auth/verify-email/confirm',[AuthController::class,'confirmEmailVerification']);
 $router->add('GET','/api/users',[AuthController::class,'users'],[AuthMiddleware::class,AdminMiddleware::class]);
 $router->add('DELETE','/api/me',[AuthController::class,'deleteMe'],[AuthMiddleware::class]);
+
+// User profile & privacy
+$router->add('GET','/api/me/profile',[UserController::class,'profile'],[AuthMiddleware::class]);
+$router->add('PATCH','/api/me/profile',[UserController::class,'updateProfile'],[AuthMiddleware::class]);
+$router->add('POST','/api/me/consent',[UserController::class,'consent'],[AuthMiddleware::class]);
+$router->add('GET','/api/me/export',[UserController::class,'export'],[AuthMiddleware::class]);
+
+// Policies
+$router->add('GET','/api/policies/terms',[PoliciesController::class,'terms']);
+$router->add('GET','/api/policies/privacy',[PoliciesController::class,'privacy']);
 
 // Stores (cafes)
 $router->add('GET','/api/cafes',[CafeController::class,'index']);

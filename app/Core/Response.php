@@ -15,6 +15,14 @@ class Response
         return $this;
     }
 
+    public function raw(string $body, int $status = 200, string $contentType = 'text/plain; charset=utf-8'): self
+    {
+        $this->status = $status;
+        $this->headers['Content-Type'] = $contentType;
+        $this->body = $body;
+        return $this;
+    }
+
     public function jsonError(string $message, int $status = 400, ?array $details = null): self
     {
         $payload = ['error' => $message];
@@ -42,6 +50,11 @@ class Response
         return $this;
     }
 
+    public function getStatus(): int
+    {
+        return $this->status;
+    }
+
     public function send(): void
     {
         http_response_code($this->status);
@@ -52,5 +65,16 @@ class Response
             return; // No body for HEAD
         }
         echo $this->body;
+    }
+
+    public function getBody(): string
+    {
+        return $this->body;
+    }
+
+    public function setBody(string $body): self
+    {
+        $this->body = $body;
+        return $this;
     }
 }

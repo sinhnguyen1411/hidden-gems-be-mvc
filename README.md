@@ -5,8 +5,12 @@ REST API backend for the Hidden Gems app. Lightweight PHP stack with a Laravel�
 ## Changelog
 - 2025‑09‑10
   - Migrations now read DB settings from `.env` (no hard‑coding).
-  - Added PowerShell smoke test `scripts/smoke.ps1` to exercise core flows end‑to‑end.
+  - Added PowerShell smoke test `scripts/smoke.ps1` to exercise core flows end‑to‑end (now includes caching/ETag checks).
   - Default MySQL port in `.env.example` is `3307` to match the current environment.
+  - Consolidated SQL schema into `database/migrations/2025_09_10_000000_schema.sql` for easier maintenance (versioned ups/downs still supported).
+  - Expanded OpenAPI docs (Swagger) to cover Vouchers, Promotions, Blog, Banners, Chat, Wallet, Ads, Admin, Policies, CSRF, Ops.
+  - Added Redis service to `docker-compose.yml` and integrated app‑level caching.
+  - Added `X-Cache` debug header (and optional `X-Cache-Keys`) for cache verification in dev.
 - 2025‑09‑04
   - Wallet (deposit/charge/refund) and Advertising requests with admin approval.
 - 2025‑09‑01
@@ -25,10 +29,108 @@ REST API backend for the Hidden Gems app. Lightweight PHP stack with a Laravel�
    - `JWT_SECRET=<your-secret>`
    - `APP_URL=http://127.0.0.1:8000`
    - `CORS_ALLOWED_ORIGIN=http://localhost` (or your frontend origin)
-3) Migrate database (DROPS and recreates DB): `php database/migrations/migrate.php`
-4) Seed demo data (optional): `php database/seeders/seed.php`
+3) Migrate database (prod-safe): `php database/migrations/migrator.php up`
+   - Dev reset (drops DB): `php database/migrations/migrate.php --drop` (ignored in production)
+4) Seed demo data (idempotent): `php database/seeders/seed.php`
 5) Start dev server: `php -S 127.0.0.1:8000 -t public`
 6) Health check: `curl http://127.0.0.1:8000/` → `{"message":"Hidden Gems API"}`
+   - Liveness: `GET /health` → `{status:"ok"}`
+   - Readiness: `GET /ready` → `{status:"ready"}` or 500 if DB is down
+   - Metrics (Prometheus): `GET /metrics` (text/plain, v0.0.4)
+   - API Docs (Swagger UI): open `http://127.0.0.1:8000/docs/`
+
+## Database
+- Versioned migrator (recommended):
+  - Up: `php database/migrations/migrator.php up`
+  - Down last N: `php database/migrations/migrator.php down 1`
+  - Baseline (mark existing up files as applied): `php database/migrations/migrator.php baseline`
+  - Convention: `YYYY_MM_DD_HHMMSS_name.up.sql` (and matching `.down.sql`).
+- Dev reset (drops DB, re-creates baseline schema): `php database/migrations/migrate.php --drop` then `migrator.php up` runs automatically.
+- Seeders are idempotent and can be re-run safely.
+ - Consolidated baseline schema file: `database/migrations/2025_09_10_000000_schema.sql` (kept small number of files for easier management).
+
+## Docker (PHP‑FPM + Nginx + MySQL)
+- Requirements: Docker, Docker Compose
+- Services: MySQL 8 (exposed on host `3307`), PHP‑FPM 8.2, Nginx (HTTPS with local certs), Redis (optional cache)
+
+Steps (development):
+- Generate local TLS certs into `docker/nginx/certs` (see `docker/nginx/certs/README.md`)
+- Start stack: `docker compose up --build -d`
+- App URL: `https://localhost` (self‑signed cert)
+- DB inside containers: host `db:3306`; on host: `127.0.0.1:3307`
+- Redis inside containers: host `redis:6379`; on host: `127.0.0.1:6379`
+- Run migrations (dev reset): `docker compose exec php php database/migrations/migrate.php --drop`
+- Apply versioned up: `docker compose exec php php database/migrations/migrator.php up`
+
+Redis cache (optional):
+- Compose includes a `redis` service; PHP is preconfigured with `REDIS_HOST=redis`.
+- To enable app caching via Redis, set any `*_CACHE_TTL` or simply leave defaults and ensure Redis is up.
+- Seed data: `docker compose exec php php database/seeders/seed.php`
+
+Config notes:
+- Nginx: HTTP→HTTPS redirect, HTTP/2, gzip; `client_max_body_size 12m`.
+- PHP: `upload_max_filesize=10M`, `post_max_size=12M`, OPCache enabled; FPM pm tuned for small env.
+- Env in Compose overrides `.env` for containers (DB_HOST=db, DB_PORT=3306, etc.).
+
+Production pointers:
+- Use trusted TLS certs (e.g., Let’s Encrypt) and set `APP_URL` to `https://...`.
+- Set `ENABLE_BANK_SIMULATION=0` and proper `JWT_SECRET`, DB creds.
+- Build a release image (no host bind mounts) and use an override compose or Helm chart.
+
+## CI/CD
+- GitHub Actions workflow: `.github/workflows/ci.yml`
+  - PHP job: composer validate/install, PHP lint (`php -l`), run tests (`composer test`).
+  - Docker job: builds Docker image (no push). Add registry login + push steps as needed.
+
+## Developer Experience & Docs
+- OpenAPI/Swagger:
+  - Swagger UI: `public/docs/index.html` (serves `public/docs/openapi.yaml`)
+  - Visit `/docs/` on your server to view docs.
+  - Spec coverage: Auth (register/login/refresh/logout/reset/change/verify), Users (profile/consent/export), Stores/Reviews, Vouchers, Promotions, Blog, Banners, Chat, Wallet, Ads, Admin, CSRF, Ops.
+- Postman:
+  - Collection: `docs/postman_collection.json` (variable `BASE_URL`)
+- Tests:
+  - Run: `composer test` (basic unit tests). Add DB-backed integration tests as needed.
+- Lint/format:
+  - Syntax check: `php -l` (CI runs it). Editor settings in `.editorconfig`.
+  - Git pre-commit hooks: `git config core.hooksPath .githooks` (runs PHP lint + tests).
+- Secrets:
+  - Do not commit `.env`. Use CI/CD secret stores (GitHub Actions Secrets) and cloud secret managers (AWS Secrets Manager/SSM, GCP Secret Manager) for prod.
+  - Docker images should receive config via env vars or orchestrator secret mounts.
+
+## Frontend Mapping (Typical Screens → API)
+- Home
+  - Banners: `GET /api/banners?vi_tri=home_top` (or other positions)
+  - Search: `GET /api/search?q=...`
+  - Active ads: `GET /api/ads/active`
+  - Contact: `GET /api/contact`
+- Auth & Account
+  - Register/Login/Refresh/Logout
+  - Forgot/Reset password, Verify email
+  - Profile: `GET/PATCH /api/me/profile`, Consent: `POST /api/me/consent`, Export: `GET /api/me/export`
+- Stores & Reviews
+  - List/Search/Detail: `/api/cafes`, `/api/cafes/search`, `/api/cafes/{id}`
+  - Reviews: `GET/POST /api/cafes/{id}/reviews`
+- My Store (Shop)
+  - My stores: `GET /api/me/stores`
+  - Create/Update store, Create branch, Upload image
+- Vouchers & Promotions
+  - Vouchers: create/assign/list by store
+  - Promotions: create (admin), apply (shop), review (admin), list by store
+- Wallet
+  - Balance/History/Deposit instructions
+  - Simulated bank webhook (dev only): `POST /api/simulate/bank-transfer`
+- Advertising
+  - Packages list, Create request (shop), My requests, Admin pending, Admin review, Active ads
+- Chat
+  - Send message, List messages, Conversations
+- Admin
+  - Dashboard, Set role, Pending stores, Approve store, Delete user
+
+## Backups
+- Shell: `DB_HOST=127.0.0.1 DB_PORT=3307 DB_USER=root DB_PASS= DB_NAME=hiddengems ./scripts/backup.sh`
+- PowerShell: `DB_HOST=127.0.0.1 DB_PORT=3307 DB_USER=root DB_PASS= DB_NAME=hiddengems ./scripts/backup.ps1`
+- Outputs: gzipped SQL dump and optional `public/uploads` archive in `backups/`.
 
 ## Smoke Test (End‑to‑End)
 - Script (PowerShell): `scripts/smoke.ps1`
@@ -36,12 +138,19 @@ REST API backend for the Hidden Gems app. Lightweight PHP stack with a Laravel�
   - PowerShell Core (macOS/Linux): `pwsh ./scripts/smoke.ps1`
   - Override base URL: `BASE_URL=http://localhost:8000 ./scripts/smoke.ps1`
 - Flow: admin/shop auth → set role → wallet deposit (simulate) → ensure store → ads (create + admin approve) → promotions (create/apply/approve) → vouchers (create/assign/list) → blog (create/update) → banners (create/list) → chat (send/list) → cafes (list/review) → wallet (me/history) → admin dashboard → search → CSRF token.
+  - Caching check: validates ETag/304 on `/api/banners` and compares first vs second call timings (second should be faster with cache/Redis).
 
 ## API Overview
 - Auth
   - `POST /api/auth/register` — create user
   - `POST /api/auth/login` — email or username + password → `access_token`, `refresh_token`
-  - `POST /api/auth/refresh` — refresh access token
+  - `POST /api/auth/refresh` — refresh access token (rotates refresh token)
+  - `POST /api/auth/logout` — revoke refresh token (auth)
+  - `POST /api/auth/forgot-password` — request password reset
+  - `POST /api/auth/reset-password` — reset password with token
+  - `POST /api/auth/change-password` — change password (auth)
+  - `POST /api/auth/verify-email/request` — issue email verify token (auth)
+  - `POST /api/auth/verify-email/confirm` — confirm email verify token
   - `GET /api/users` — list users (admin)
   - `DELETE /api/me` — delete current user (auth)
 - Users & Admin
@@ -51,6 +160,11 @@ REST API backend for the Hidden Gems app. Lightweight PHP stack with a Laravel�
   - `GET /api/admin/pending-stores` — stores pending approval (admin)
   - `POST /api/admin/stores/{id}/approve` — approve/reject store (admin) `{action:'approve'|'reject'}`
   - `GET /api/contact` — contact/deep-link info
+- User
+  - `GET /api/me/profile` — get profile (auth)
+  - `PATCH /api/me/profile` — update `full_name`, `phone_number`, optional `email` (re-verification required)
+  - `POST /api/me/consent` — record consent `{terms_version?, privacy_version?}` (auth)
+  - `GET /api/me/export` — export personal data (auth)
 - Stores & Reviews
   - `GET /api/cafes` — list stores; `GET /api/cafes/search?q=...`; `GET /api/cafes/{id}`
   - `GET /api/cafes/{id}/reviews` — list; `POST /api/cafes/{id}/reviews` — create (auth)
@@ -89,6 +203,13 @@ REST API backend for the Hidden Gems app. Lightweight PHP stack with a Laravel�
   - Admin: `GET /api/admin/ads/requests/pending`, `POST /api/admin/ads/requests/{id}/review`
 - CSRF
   - `GET /api/csrf-token` — issue CSRF token and set cookie
+- Ops
+  - `GET /health` — liveness
+  - `GET /ready` — readiness (DB ping)
+  - `GET /metrics` — Prometheus text exposition
+- Policies
+  - `GET /api/policies/terms` — Terms of Service (markdown content)
+  - `GET /api/policies/privacy` — Privacy Policy (markdown content)
 
 ### Delete endpoints (summary)
 - `DELETE /api/me` — permanently deletes the current account; returns `409` if related data prevents deletion.
@@ -104,6 +225,33 @@ REST API backend for the Hidden Gems app. Lightweight PHP stack with a Laravel�
 - CORS headers are sent on all responses; configure origin via `.env`.
 - CSRF (optional): enable with `CSRF_ENABLED=1`; fetch at `GET /api/csrf-token`; send token via header or body for mutating requests.
 
+### Security & Throttling
+- Login rate limit: `RATE_LIMIT_LOGIN_MAX` attempts per `RATE_LIMIT_LOGIN_WINDOW` seconds, per identifier+IP.
+- Refresh tokens: rotation on refresh; optional binding to UA/IP (`REFRESH_BIND_UA`, `REFRESH_BIND_IP`).
+- Password reset: TTL `PASSWORD_RESET_TTL_SECONDS`. In local/dev the token is returned in the API response.
+- Email verification: TTL `EMAIL_VERIFY_TTL_SECONDS`. In local/dev the token is returned in the API response.
+
+### Observability (Logging, Errors, Metrics)
+- Structured JSON logs with correlation id (`X-Request-Id` header).
+- Configure logging via env: `LOG_CHANNEL=stdout|file`, `LOG_PATH=storage/app.log`.
+- Error tracking:
+  - Rollbar: set `ROLLBAR_ACCESS_TOKEN` to send server‑side exceptions.
+  - Sentry: set `SENTRY_DSN` (SDK integration recommended for production).
+- Metrics endpoint: `GET /metrics` exposes counters/histograms (per‑process file‑backed aggregation) and DB up gauge.
+
+### Performance & Caching
+- HTTP caching: optional ETag + `Cache-Control` for GET responses when `CACHE_ENABLE_ETAG=1` (default). Override `CACHE_MAX_AGE` for max-age.
+- Redis/file cache: integrated cache for frequent reads (banners, admin dashboard, active ads, search). Configure Redis via `REDIS_URL` or `REDIS_HOST`/`REDIS_PORT`.
+- Uploads → CDN: set `UPLOADS_URL_BASE` to CDN origin (and optionally mount a cloud bucket to `UPLOADS_PATH`) so returned file URLs point to CDN.
+- Pagination guards: controllers clamp `per_page` to sensible limits (e.g., 50) to avoid heavy queries.
+ - Debug headers: enable `CACHE_DEBUG_HEADER=1` to send `X-Cache: HIT|MISS` (and optional `X-Cache-Keys` with `CACHE_DEBUG_HEADER_KEYS=1`) for cache verification.
+
+
+### Email
+- SendGrid supported via `SENDGRID_API_KEY` (HTTP API).
+- From: `MAIL_FROM_EMAIL`, `MAIL_FROM_NAME`.
+- Frontend base for links: `FRONTEND_URL` (used in verification/reset links).
+
 ## Environment
 - Core
   - `APP_URL` — base URL for uploaded file links
@@ -117,6 +265,13 @@ REST API backend for the Hidden Gems app. Lightweight PHP stack with a Laravel�
   - Uploads: `UPLOAD_MAX_BYTES`, `UPLOAD_ALLOWED_EXT`
   - CSRF: `CSRF_ENABLED`, `CSRF_COOKIE_NAME`, `CSRF_HEADER_NAME`, `CSRF_LIFETIME_SECONDS`, `CSRF_SECRET`
   - Webhook: `BANK_WEBHOOK_SECRET`
+  - Feature flags: `ENABLE_BANK_SIMULATION` (0/1)
+  - Upload security: `UPLOAD_ALLOWED_MIME`, `UPLOAD_AV_SCAN_CMD` (optional AV command)
+  - Login throttling: `RATE_LIMIT_LOGIN_MAX`, `RATE_LIMIT_LOGIN_WINDOW`
+  - Refresh: `REFRESH_TOKEN_TTL_SECONDS`, `REFRESH_BIND_UA`, `REFRESH_BIND_IP`
+  - Password reset: `PASSWORD_RESET_TTL_SECONDS`
+  - Email verify: `EMAIL_VERIFY_TTL_SECONDS`
+  - Redis & caching: `REDIS_URL`, `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `CACHE_ENABLE_ETAG`, `CACHE_MAX_AGE`, `BANNERS_CACHE_TTL`, `DASHBOARD_CACHE_TTL`, `ADS_ACTIVE_CACHE_TTL`, `SEARCH_CACHE_TTL`
 
 ## Project Structure
 - `app/Http/Controllers`: HTTP controllers (Auth, Store/Cafe, Review, Search, Voucher, Promotion, Blog, Banner, Chat, Admin, Wallet, Advertising, CSRF)
