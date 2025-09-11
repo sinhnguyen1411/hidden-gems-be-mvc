@@ -43,6 +43,8 @@ class AdvertisingController extends Controller
 
         $store = Cafe::find($storeId);
         if (!$store) return JsonResponse::ok(['error'=>'Store not found'],404);
+        // Ensure correct type for static analysis and avoid array-access warnings
+        $store = (array)$store;
         if ((int)$store['id_chu_so_huu'] !== $uid && ($user['role'] ?? '') !== 'admin') {
             return JsonResponse::ok(['error'=>'Forbidden'],403);
         }
@@ -107,6 +109,8 @@ class AdvertisingController extends Controller
         if (!in_array($status,['da_duyet','tu_choi'],true)) return JsonResponse::ok(['error'=>'Invalid status'],422);
         $ad = AdRequest::find($id);
         if (!$ad) return JsonResponse::ok(['error'=>'Not found'],404);
+        // Ensure correct type for static analysis and avoid array-access warnings
+        $ad = (array)$ad;
         $user = $req->getAttribute('user', []);
         $adminId = (int)($user['uid'] ?? 0);
 
