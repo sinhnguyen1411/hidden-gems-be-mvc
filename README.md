@@ -21,6 +21,14 @@ REST API backend for the Hidden Gems app. Lightweight PHP stack with a Laravelâ€
 - PHP 8.2+ with `pdo_mysql`
 - Composer
 - MySQL 8 (listening on port `3307` by default)
+ - Redis (optional, for caching)
+
+Notes on caching
+- Out of the box the app uses a lightweight file cache under `storage/cache`.
+- If you want Redis caching, install the client locally (not committed):
+  - `composer require predis/predis:^2.2`
+  - Set `REDIS_URL=redis://host:6379/0` or `REDIS_HOST=host` (+ `REDIS_PORT` if not 6379) in `.env`.
+- The cache layer (`App\Core\Cache`) autoâ€‘detects Redis; if it cannot connect or Predis is missing, it falls back to file cache safely.
 
 ## Quick Start
 1) Install dependencies: `composer install`
@@ -116,7 +124,10 @@ Steps (development):
 
 Redis cache (optional):
 - Compose includes a `redis` service; PHP is preconfigured with `REDIS_HOST=redis`.
-- To enable app caching via Redis, set any `*_CACHE_TTL` or simply leave defaults and ensure Redis is up.
+- To enable Redis caching in the app, ensure Redis is up and install Predis locally:
+  - `composer require predis/predis:^2.2`
+  - Keep `REDIS_HOST=redis` (inside Docker) or set `REDIS_URL` accordingly.
+  - If Predis is not installed or Redis is unreachable, the app will transparently fall back to file cache.
 - Seed data: `docker compose exec php php database/seeders/seed.php`
 
 Config notes:
