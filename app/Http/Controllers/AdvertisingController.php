@@ -125,10 +125,14 @@ class AdvertisingController extends Controller
         }
 
         $ok = AdRequest::review($id,$status,$adminId);
-        // Audit log
-        $meta = json_encode(['status'=>$status], JSON_UNESCAPED_UNICODE);
-        \App\Core\DB::pdo()->prepare('INSERT INTO audit_log(actor_user_id, action, target_type, target_id, meta) VALUES (?,?,?,?,?)')
-            ->execute([$adminId,'review_ad','ad_request',$id,$meta]);
+        // Audit log (best-effort; do not fail the response if logging fails)
+        try {
+            $meta = json_encode(['status'=>$status], JSON_UNESCAPED_UNICODE);
+            \App\Core\DB::pdo()->prepare('INSERT INTO audit_log(actor_user_id, action, target_type, target_id, meta) VALUES (?,?,?,?,?)')
+                ->execute([$adminId,'review_ad','ad_request',$id,$meta]);
+        } catch (\Throwable $e) {
+            // swallow logging errors
+        }
         return JsonResponse::ok(['message'=>$ok?'Updated':'No changes']);
     }
 
