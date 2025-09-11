@@ -18,7 +18,7 @@ COPY docker/php/www.conf /usr/local/etc/php-fpm.d/www.conf
 
 WORKDIR /var/www/html
 
-# Composer (optional in dev; handy in CI/build)
+# Composer (optional in dev; handy for builds)
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Optimize install layer caching
@@ -35,4 +35,3 @@ RUN mkdir -p storage && chown -R www-data:www-data storage
 USER www-data
 
 CMD ["php-fpm"]
-

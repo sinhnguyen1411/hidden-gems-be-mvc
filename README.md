@@ -129,11 +129,6 @@ Production pointers:
 - Set `ENABLE_BANK_SIMULATION=0` and proper `JWT_SECRET`, DB creds.
 - Build a release image (no host bind mounts) and use an override compose or Helm chart.
 
-## CI/CD
-- GitHub Actions workflow: `.github/workflows/ci.yml`
-  - PHP job: composer validate/install, PHP lint (`php -l`), run tests (`composer test`).
-  - Docker job: builds Docker image (no push). Add registry login + push steps as needed.
-
 ## Developer Experience & Docs
 - OpenAPI/Swagger:
   - Swagger UI: `public/docs/index.html` (serves `public/docs/openapi.yaml`)
@@ -144,10 +139,10 @@ Production pointers:
 - Tests:
   - Run: `composer test` (basic unit tests). Add DB-backed integration tests as needed.
 - Lint/format:
-  - Syntax check: `php -l` (CI runs it). Editor settings in `.editorconfig`.
+  - Syntax check: `php -l`. Editor settings in `.editorconfig`.
   - Git pre-commit hooks: `git config core.hooksPath .githooks` (runs PHP lint + tests).
 - Secrets:
-  - Do not commit `.env`. Use CI/CD secret stores (GitHub Actions Secrets) and cloud secret managers (AWS Secrets Manager/SSM, GCP Secret Manager) for prod.
+  - Do not commit `.env`. For production, use a proper secret manager (AWS Secrets Manager/SSM, GCP Secret Manager, etc.).
   - Docker images should receive config via env vars or orchestrator secret mounts.
 
 ## Frontend Mapping (Typical Screens → API)
