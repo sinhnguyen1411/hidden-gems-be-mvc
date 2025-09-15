@@ -17,7 +17,7 @@ DB::init([
 
 $pdo = DB::pdo();
 
-echo "🚀 Start seeding...\n";
+echo "Start seeding...\n";
 
 // Status
 // Status (idempotent)
@@ -34,16 +34,63 @@ $pdo->exec("INSERT INTO status(ten_trang_thai, nhom_trang_thai)
 // Users
 $users = [
     ['admin','admin@example.com','admin123','Admin User','admin','0123456789'],
-    ['alice123','alice@example.com','secret123','Alice','customer','0987654321']
+    ['alice123','alice@example.com','secret123','Alice','customer','0987654321'],
+    ['shop123','shop@example.com','shop123','Shop Owner','shop','0900000000']
 ];
+// Introspect users table columns to adapt to schema differences
+$columns = [];
+try {
+    $colStmt = $pdo->query("SHOW COLUMNS FROM users");
+    $columns = array_map(fn($r) => $r['Field'], $colStmt->fetchAll(PDO::FETCH_ASSOC));
+} catch (Throwable $e) {
+    $columns = [];
+}
+
 foreach ($users as $u) {
-    $check = $pdo->prepare("SELECT id_user FROM users WHERE email=? LIMIT 1");
-    $check->execute([$u[1]]);
-    if (!$check->fetch()) {
-        $pdo->prepare("INSERT INTO users(username,email,password_hash,full_name,role,phone_number) VALUES (?,?,?,?,?,?)")
-            ->execute([$u[0],$u[1],password_hash($u[2],PASSWORD_BCRYPT),$u[3],$u[4],$u[5]]);
+    // Prefer checking by email; fallback to username if email not available
+    $exists = false;
+    try {
+        $check = $pdo->prepare("SELECT id_user FROM users WHERE email=? LIMIT 1");
+        $check->execute([$u[1]]);
+        $exists = (bool)$check->fetch();
+    } catch (Throwable $e) {
+        try {
+            $check = $pdo->prepare("SELECT id_user FROM users WHERE username=? LIMIT 1");
+            $check->execute([$u[0]]);
+            $exists = (bool)$check->fetch();
+        } catch (Throwable $e2) {
+            $exists = false;
+        }
+    }
+
+    if (!$exists) {
+        $passwordHashed = password_hash($u[2], PASSWORD_BCRYPT);
+        $dataMap = [
+            'username' => $u[0],
+            'email' => $u[1],
+            'password_hash' => $passwordHashed,
+            'password' => $passwordHashed, // in case schema uses `password`
+            'full_name' => $u[3],
+            'role' => $u[4],
+            'phone_number' => $u[5],
+        ];
+        $insertCols = array_values(array_intersect(array_keys($dataMap), $columns));
+        if (empty($insertCols)) {
+            // Fallback minimal insert with common fields
+            $insertCols = array_values(array_intersect(['email', 'password_hash', 'password'], array_keys($dataMap)));
+        }
+        $placeholders = implode(',', array_fill(0, count($insertCols), '?'));
+        $sql = 'INSERT INTO users(' . implode(',', $insertCols) . ') VALUES (' . $placeholders . ')';
+        $values = array_map(fn($k) => $dataMap[$k], $insertCols);
+        $pdo->prepare($sql)->execute($values);
     }
 }
+
+// Get shop owner (by email) to assign as store owner
+$ownerEmail = 'shop@example.com';
+$getOwner = $pdo->prepare("SELECT id_user FROM users WHERE email=? LIMIT 1");
+$getOwner->execute([$ownerEmail]);
+$ownerId = (int)$getOwner->fetchColumn();
 
 // Location
 // Location (insert if not exists by full address)
@@ -60,12 +107,12 @@ if ($row = $chkLoc->fetch()) {
 // Store
 // Store (by unique name + owner)
 $chkStore = $pdo->prepare("SELECT id_cua_hang FROM cua_hang WHERE id_chu_so_huu=? AND ten_cua_hang=? LIMIT 1");
-$chkStore->execute([2,'Hidden Gem']);
+$chkStore->execute([$ownerId,'Hidden Gem']);
 if ($row = $chkStore->fetch()) {
     $storeId = (int)$row['id_cua_hang'];
 } else {
     $pdo->prepare("INSERT INTO cua_hang(id_chu_so_huu,ten_cua_hang,mo_ta,id_trang_thai,id_vi_tri) VALUES (?,?,?,?,?)")
-        ->execute([2,'Hidden Gem','Quan ca phe thu vi',2,$locationId]);
+        ->execute([$ownerId,'Hidden Gem','Quan ca phe thu vi',2,$locationId]);
     $storeId = (int)$pdo->lastInsertId();
 }
 
@@ -140,5 +187,4 @@ if ($row = $chkPr->fetch()) {
 $pdo->prepare("INSERT IGNORE INTO khuyen_mai_cua_hang(id_khuyen_mai,id_cua_hang) VALUES (?,?)")
     ->execute([$promoId,$storeId]);
 
-echo "✅ Seeding done!\n";
-
+echo "Seeding done!\n";

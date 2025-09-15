@@ -36,10 +36,10 @@ if ($env === 'production' && $allowDrop) {
     $allowDrop = false;
 }
 if ($allowDrop) {
-    echo "⚠️  Dropping database: {$db}\n";
+    echo "Dropping database: {$db}\n";
     $server->exec("DROP DATABASE IF EXISTS `{$db}`;");
 }
-echo "🧱 Ensuring database exists: {$db}\n";
+echo "Ensuring database exists: {$db}\n";
 $server->exec("CREATE DATABASE IF NOT EXISTS `{$db}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");
 
 // 2) Initialize app DB connection (now that DB exists)
@@ -53,19 +53,17 @@ DB::init([
 ]);
 $pdo = DB::pdo();
 
-// 3) If dropping, apply baseline .sql files; otherwise only apply versioned ups
-if ($allowDrop) {
-    $migrationFiles = array_values(array_filter(glob(__DIR__ . '/*.sql'), function($f){
-        return !str_ends_with($f, '.up.sql') && !str_ends_with($f, '.down.sql');
-    }));
-    sort($migrationFiles);
-    foreach ($migrationFiles as $file) {
-        $sql = file_get_contents($file);
-        $pdo->exec($sql);
-        echo "✅ Executed baseline: " . basename($file) . "\n";
-    }
-    echo "🎉 Baseline migrations executed!\n";
+// 3) Apply baseline .sql files (idempotent) to ensure core schema exists
+$migrationFiles = array_values(array_filter(glob(__DIR__ . '/*.sql'), function($f){
+    return !str_ends_with($f, '.up.sql') && !str_ends_with($f, '.down.sql');
+}));
+sort($migrationFiles);
+foreach ($migrationFiles as $file) {
+    $sql = file_get_contents($file);
+    $pdo->exec($sql);
+    echo "Executed baseline: " . basename($file) . "\n";
 }
+echo "Baseline migrations ensured!\n";
 
 // 4) Apply versioned up migrations
 require __DIR__ . '/migrator.php';

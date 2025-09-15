@@ -33,8 +33,8 @@ class Request
             ? new JsonRequest()
             : new FormRequest();
 
+        // Set normalized HTTP method
         $req->method = $method;
-        $req->method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
         $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
         if ($uri === '/index.php' || str_starts_with($uri, '/index.php/')) {
             $uri = substr($uri, strlen('/index.php')) ?: '/';
