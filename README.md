@@ -21,6 +21,8 @@ REST API backend for the Hidden Gems app. Lightweight PHP stack with a Laravelâ€
 - PHP 8.2+ with `pdo_mysql`
 - Composer
 - MariaDB 10.6+ (listening on port `3307` by default)
+- mysql.exe Ver 15.1 Distrib 10.4.32-MariaDB, for Win64, source revision c4143f909528e3fab0677a28631d10389354c491
+- Distrib 10.4.32-MariaDB
 - Redis (optional, for caching)
 
 Notes on caching
