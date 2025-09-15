@@ -20,8 +20,8 @@ REST API backend for the Hidden Gems app. Lightweight PHP stack with a Laravel�
 ## Requirements
 - PHP 8.2+ with `pdo_mysql`
 - Composer
-- MySQL 8 (listening on port `3307` by default)
- - Redis (optional, for caching)
+- MariaDB 10.6+ (listening on port `3307` by default)
+- Redis (optional, for caching)
 
 Notes on caching
 - Out of the box the app uses a lightweight file cache under `storage/cache`.
@@ -33,7 +33,7 @@ Notes on caching
 ## Quick Start
 1) Install dependencies: `composer install`
 2) Configure environment: copy `.env.example` → `.env`, set at minimum:
-   - `DB_DRIVER=mysql`, `DB_HOST=127.0.0.1`, `DB_PORT=3307`, `DB_DATABASE=hiddengems`, `DB_USERNAME=root`, `DB_PASSWORD=`
+   - `DB_DRIVER=mysql` (PDO driver connects to MariaDB), `DB_HOST=127.0.0.1`, `DB_PORT=3307`, `DB_DATABASE=hiddengems`, `DB_USERNAME=root`, `DB_PASSWORD=`
    - `JWT_SECRET=<your-secret>`
    - `APP_URL=http://127.0.0.1:8000`
    - `CORS_ALLOWED_ORIGIN=http://localhost` (or your frontend origin)
@@ -109,9 +109,11 @@ Notes on caching
 - Seeders are idempotent and can be re-run safely.
  - Consolidated baseline schema file: `database/migrations/2025_09_10_000000_schema.sql` (kept small number of files for easier management).
 
-## Docker (PHP‑FPM + Nginx + MySQL)
+## Docker (PHP‑FPM + Nginx + MariaDB)
 - Requirements: Docker, Docker Compose
-- Services: MySQL 8 (exposed on host `3307`), PHP‑FPM 8.2, Nginx (HTTPS with local certs), Redis (optional cache)
+- Services: MariaDB (exposed on host `3307`), PHP‑FPM 8.2, Nginx (HTTPS with local certs), Redis (optional cache)
+
+Important: This project requires MariaDB. Some SQL (e.g., `CREATE INDEX IF NOT EXISTS`) relies on MariaDB-specific syntax. Use MariaDB locally and in CI/production.
 
 Steps (development):
 - Generate local TLS certs into `docker/nginx/certs` (see `docker/nginx/certs/README.md`)

@@ -18,7 +18,7 @@ $user   = $_ENV['DB_USERNAME'] ?? 'root';
 $pass   = $_ENV['DB_PASSWORD'] ?? '';
 
 if ($driver !== 'mysql') {
-    fwrite(STDERR, "Only MySQL is supported by migrate.php (DB_DRIVER={$driver})\n");
+    fwrite(STDERR, "This project uses MariaDB with PDO mysql driver. Set DB_DRIVER=mysql (got DB_DRIVER={$driver}).\n");
     exit(1);
 }
 
