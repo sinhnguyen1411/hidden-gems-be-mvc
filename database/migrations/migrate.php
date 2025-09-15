@@ -96,5 +96,6 @@ $ensureIndex($pdo, 'yeu_cau_quang_cao', 'idx_ad_store_time', 'id_cua_hang, ngay_
 
 echo "Baseline migrations ensured + indexes verified!\n";
 
-// 4) Apply versioned up migrations
+// 4) Apply versioned up migrations (force 'up' even if this script was run with flags like --drop)
+$argv = ['migrator.php', 'up'];
 require __DIR__ . '/migrator.php';

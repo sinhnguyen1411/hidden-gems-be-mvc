@@ -1,23 +1,24 @@
 <?php
 // Versioned migrator: applies *.up.sql in order, tracks in schema_migrations, supports down/baseline.
 
+declare(strict_types=1);
+
 require __DIR__ . '/../../vendor/autoload.php';
 
 use Dotenv\Dotenv;
 use App\Core\DB;
 
 $root = dirname(__DIR__, 2);
-$dotenv = Dotenv::createImmutable($root);
-$dotenv->safeLoad();
+Dotenv::createImmutable($root)->safeLoad();
 
 // Init DB connection
 DB::init([
-    'driver' => $_ENV['DB_DRIVER'] ?? 'mysql',
-    'host' => $_ENV['DB_HOST'] ?? '127.0.0.1',
-    'port' => (int)($_ENV['DB_PORT'] ?? 3306),
+    'driver'   => $_ENV['DB_DRIVER']   ?? 'mysql',
+    'host'     => $_ENV['DB_HOST']     ?? '127.0.0.1',
+    'port'     => (int)($_ENV['DB_PORT'] ?? 3307),
     'database' => $_ENV['DB_DATABASE'] ?? 'hiddengems',
     'username' => $_ENV['DB_USERNAME'] ?? 'root',
-    'password' => $_ENV['DB_PASSWORD'] ?? ''
+    'password' => $_ENV['DB_PASSWORD'] ?? '',
 ]);
 
 $pdo = DB::pdo();
@@ -34,7 +35,7 @@ function appliedVersions(PDO $pdo): array {
 }
 
 function allUpMigrations(): array {
-    $files = glob(__DIR__ . '/*.up.sql');
+    $files = glob(__DIR__ . '/*.up.sql') ?: [];
     sort($files, SORT_STRING);
     $map = [];
     foreach ($files as $f) {
@@ -46,10 +47,19 @@ function allUpMigrations(): array {
 
 function runSqlFile(PDO $pdo, string $path): void {
     $sql = file_get_contents($path);
+    if ($sql === false) {
+        throw new RuntimeException("Failed to read SQL file: {$path}");
+    }
     $pdo->exec($sql);
 }
 
+// When included by another script that leaves flags in $argv (e.g., --drop),
+// treat such cases as 'up' by default.
 $cmd = $argv[1] ?? 'up';
+if (is_string($cmd) && str_starts_with($cmd, '-')) {
+    $cmd = 'up';
+}
+
 switch ($cmd) {
     case 'up':
         $applied = array_flip(appliedVersions($pdo));
@@ -60,23 +70,23 @@ switch ($cmd) {
             runSqlFile($pdo, $file);
             $stmt = $pdo->prepare('INSERT INTO schema_migrations(version) VALUES (?)');
             $stmt->execute([$ver]);
-            echo "✅ Applied: $ver\n";
+            echo "Applied: {$ver}\n";
             $count++;
         }
-        if ($count === 0) echo "✔️  No pending migrations.\n";
+        if ($count === 0) echo "No pending migrations.\n";
         break;
 
     case 'down':
         $steps = (int)($argv[2] ?? 1);
         if ($steps < 1) { echo "Steps must be >= 1\n"; exit(1); }
-        for ($i=0; $i<$steps; $i++) {
+        for ($i = 0; $i < $steps; $i++) {
             $ver = $pdo->query('SELECT version FROM schema_migrations ORDER BY applied_at DESC LIMIT 1')->fetchColumn();
             if (!$ver) { echo "No more migrations to roll back.\n"; break; }
             $down = __DIR__ . '/' . $ver . '.down.sql';
-            if (!is_file($down)) { echo "No down file for $ver\n"; exit(1); }
+            if (!is_file($down)) { echo "No down file for {$ver}\n"; exit(1); }
             runSqlFile($pdo, $down);
-            $pdo->prepare('DELETE FROM schema_migrations WHERE version=?')->execute([$ver]);
-            echo "↩️  Rolled back: $ver\n";
+            $pdo->prepare('DELETE FROM schema_migrations WHERE version = ?')->execute([$ver]);
+            echo "Rolled back: {$ver}\n";
         }
         break;
 
@@ -88,14 +98,13 @@ switch ($cmd) {
         foreach (array_keys($all) as $ver) {
             if (isset($applied[$ver])) continue;
             $pdo->prepare('INSERT INTO schema_migrations(version) VALUES (?)')->execute([$ver]);
-            echo "🧱 Baseline: $ver\n";
+            echo "Baseline: {$ver}\n";
             $count++;
         }
-        if ($count === 0) echo "✔️  Nothing to baseline.\n";
+        if ($count === 0) echo "Nothing to baseline.\n";
         break;
 
     default:
         echo "Usage: php database/migrations/migrator.php [up|down [N]|baseline]\n";
         exit(1);
 }
-
