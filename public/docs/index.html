@@ -10,13 +10,17 @@
     <div id="swagger"></div>
     <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
     <script>
+      // Resolve spec path for both /docs and /docs/ entry points
+      const href = window.location.href;
+      const baseHref = href.endsWith('/') ? href : `${href}/`;
+      const specUrl = new URL('openapi.yaml', baseHref).toString();
+
       window.ui = SwaggerUIBundle({
-        url: './openapi.yaml',
+        url: specUrl,
         dom_id: '#swagger',
         presets: [SwaggerUIBundle.presets.apis],
         layout: 'BaseLayout'
       });
     </script>
   </body>
-  </html>
-
+</html>

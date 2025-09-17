@@ -8,6 +8,7 @@ use App\Core\Auth as JWTAuth;
 use App\Models\User;
 use App\Core\Validator;
 use App\Core\DB;
+use PDOException;
 
 class AuthController extends Controller
 {
@@ -72,14 +73,42 @@ class AuthController extends Controller
         if ($errors) {
             return JsonResponse::ok(['error'=>'Invalid input','details'=>$errors],422);
         }
-        $email = strtolower($data['email']);
+
+        $username = trim((string)($data['username'] ?? ''));
+        $email = strtolower(trim((string)($data['email'] ?? '')));
+        $fullName = array_key_exists('full_name', $data) ? trim((string)$data['full_name']) : null;
+        if ($fullName === '') {
+            $fullName = null;
+        }
+        $phoneRaw = array_key_exists('phone_number', $data) ? trim((string)$data['phone_number']) : null;
+        $phone = ($phoneRaw === null || $phoneRaw === '') ? null : $phoneRaw;
+
+        if ($username === '') {
+            return JsonResponse::ok(['error'=>'Invalid input','details'=>['username'=>['Username is required']]],422);
+        }
+        if ($email === '') {
+            return JsonResponse::ok(['error'=>'Invalid input','details'=>['email'=>['Email is required']]],422);
+        }
+        if (User::findByUsername($username)) {
+            return JsonResponse::ok(['error'=>'Username already in use'],409);
+        }
         if (User::findByEmail($email)) {
             return JsonResponse::ok(['error'=>'Email already in use'],409);
         }
-        $hash = password_hash($data['password'], PASSWORD_BCRYPT);
-        $fullName = $data['full_name'] ?? null;
-        $phone = $data['phone_number'] ?? null;
-        $id = User::create($data['username'], $email, $hash, 'customer', $fullName, $phone);
+        if ($phone !== null && User::findByPhoneNumber($phone)) {
+            return JsonResponse::ok(['error'=>'Phone number already in use'],409);
+        }
+
+        $hash = password_hash((string)$data['password'], PASSWORD_BCRYPT);
+        try {
+            $id = User::create($username, $email, $hash, 'customer', $fullName, $phone);
+        } catch (PDOException $e) {
+            if ($e->getCode() === '23000') {
+                return JsonResponse::ok(['error'=>'User information already in use'],409);
+            }
+            throw $e;
+        }
+
         // Email verification token (optional)
         $ttl = (int)($_ENV['EMAIL_VERIFY_TTL_SECONDS'] ?? 86400);
         $tkn = bin2hex(random_bytes(32));

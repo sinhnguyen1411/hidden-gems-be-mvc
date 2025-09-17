@@ -20,6 +20,17 @@ class User
         return $row ?: null;
     }
 
+    public static function findByPhoneNumber(string $phoneNumber): ?array
+    {
+        if ($phoneNumber === "") {
+            return null;
+        }
+        $stmt = DB::pdo()->prepare('SELECT * FROM users WHERE phone_number = ? LIMIT 1');
+        $stmt->execute([$phoneNumber]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     public static function findById(int $id): ?array
     {
         $stmt = DB::pdo()->prepare('SELECT * FROM users WHERE id_user = ? LIMIT 1');

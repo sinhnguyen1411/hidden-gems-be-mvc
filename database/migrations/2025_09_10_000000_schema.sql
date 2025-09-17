@@ -4,11 +4,7 @@
 -- If your editor lints SQL, set the dialect to MySQL/MariaDB accordingly.
 -- mysql.exe Ver 15.1 Distrib 10.4.32-MariaDB, for Win64, source revision c4143f909528e3fab0677a28631d10389354c491
 -- Distrib 10.4.32-MariaDB
-CREATE DATABASE IF NOT EXISTS hiddengems
-  DEFAULT CHARACTER SET utf8mb4
-  COLLATE utf8mb4_unicode_ci;
-USE hiddengems;
-
+-- Database selection handled by migration scripts; expect current connection to target desired schema.
 -- 0) STATUS
 CREATE TABLE IF NOT EXISTS status (
   id_trang_thai INT PRIMARY KEY AUTO_INCREMENT,
