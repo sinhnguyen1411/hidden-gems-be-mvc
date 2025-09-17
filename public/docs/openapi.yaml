@@ -178,7 +178,6 @@ paths:
                 refresh_token: { type: string }
               required: [refresh_token]
       responses: { '200': { description: OK } }
-  /api/cafes:
   /api/auth/register:
     post:
       tags: [Auth]
