@@ -41,6 +41,7 @@ class BannerController extends Controller
         if (!$imageUrl) return JsonResponse::ok(['error'=>'Image required'],422);
 
         $id = Banner::create($title,$desc,$imageUrl,$link,$pos,$order,$active);
+        Banner::touchCacheHint();
         return JsonResponse::ok(['message'=>'Banner created','id_banner'=>$id,'url_anh'=>$imageUrl],201);
     }
 
@@ -58,6 +59,35 @@ class BannerController extends Controller
             $fields['url_anh'] = $saved['url'];
         }
         $ok = $fields ? Banner::update($id,$fields) : false;
+        if ($ok) {
+            Banner::touchCacheHint();
+        }
         return JsonResponse::ok(['message'=>$ok?'Updated':'No changes']);
+    }
+
+    public function reorder(Request $req): Response
+    {
+        $body = $req->getParsedBody();
+        $order = $body['order'] ?? null;
+        if (!is_array($order) || !$order) {
+            return JsonResponse::ok(['error'=>'Invalid order payload'],422);
+        }
+        $ids = array_values(array_filter(array_map('intval',$order), function ($id) { return $id > 0; }));
+        if (!$ids) {
+            return JsonResponse::ok(['error'=>'Invalid order payload'],422);
+        }
+        $updated = Banner::reorder($ids);
+        Banner::touchCacheHint();
+        return JsonResponse::ok(['message'=>'Updated','updated'=>$updated]);
+    }
+
+    public function delete(Request $req): Response
+    {
+        $id = (int)$req->getAttribute('id');
+        $ok = Banner::delete($id);
+        if ($ok) {
+            Banner::touchCacheHint();
+        }
+        return JsonResponse::ok(['message'=>$ok?'Deleted':'No changes']);
     }
 }

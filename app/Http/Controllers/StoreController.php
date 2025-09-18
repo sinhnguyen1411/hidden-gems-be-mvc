@@ -5,6 +5,7 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Core\JsonResponse;
 use App\Core\Validator;
+use App\Core\Cache;
 use App\Models\Cafe;
 use App\Models\Image;
 
@@ -103,5 +104,36 @@ class StoreController extends Controller
         }
         $imgId = Image::addForStore($storeId, $uid, $saved['url'], (bool)($req->getParsedBody()['is_avatar'] ?? false));
         return JsonResponse::ok(['message'=>'Uploaded','image_id'=>$imgId,'url'=>$saved['url']],201);
+    }
+
+    public function images(Request $req): Response
+    {
+        $storeId = (int)$req->getAttribute('id');
+        $rows = Image::listForStore($storeId);
+        return JsonResponse::ok(['data'=>$rows]);
+    }
+
+    public function dashboard(Request $req): Response
+    {
+        $storeId = (int)$req->getAttribute('id');
+        $user = $req->getAttribute('user', []);
+        $uid = (int)($user['uid'] ?? 0);
+        $store = Cafe::find($storeId);
+        if (!$store) {
+            return JsonResponse::ok(['error'=>'Not found'],404);
+        }
+        if ((int)$store['id_chu_so_huu'] !== $uid && ($user['role'] ?? '') !== 'admin') {
+            return JsonResponse::ok(['error'=>'Forbidden'],403);
+        }
+        $ttl = (int)($_ENV['STORE_DASHBOARD_CACHE_TTL'] ?? 30);
+        $cacheKey = 'store:dashboard:'.$storeId;
+        $data = Cache::remember($cacheKey, $ttl, function() use ($storeId){
+            return Cafe::dashboardMetrics($storeId);
+        });
+        if (!is_array($data)) {
+            $data = Cafe::dashboardMetrics($storeId);
+        }
+        $data['store_id'] = $storeId;
+        return JsonResponse::ok(['data'=>$data]);
     }
 }

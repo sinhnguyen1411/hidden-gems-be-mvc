@@ -15,18 +15,8 @@ class BlogController extends Controller
         $page = max(1,(int)($q['page'] ?? 1));
         $per = min(50, max(1,(int)($q['per_page'] ?? 10)));
         $term = trim($q['q'] ?? '');
-        if ($term==='') {
-            // simple list without filter
-            $offset = ($page-1)*$per;
-            $stmt = \App\Core\DB::pdo()->prepare('SELECT b.*, u.username AS author FROM blog b JOIN users u ON u.id_user=b.id_user ORDER BY b.id_blog DESC LIMIT ? OFFSET ?');
-            $stmt->bindValue(1,$per,\PDO::PARAM_INT);
-            $stmt->bindValue(2,$offset,\PDO::PARAM_INT);
-            $stmt->execute();
-            $items = $stmt->fetchAll();
-            $count = (int)\App\Core\DB::pdo()->query('SELECT COUNT(*) FROM blog')->fetchColumn();
-            return JsonResponse::ok(['data'=>['items'=>$items,'total'=>$count,'page'=>$page,'per_page'=>$per]]);
-        }
-        return JsonResponse::ok(['data'=>Blog::search($term,$page,$per)]);
+        $data = Blog::paginatePublic($term,$page,$per);
+        return JsonResponse::ok(['data'=>$data]);
     }
 
     public function create(Request $req): Response
@@ -41,7 +31,8 @@ class BlogController extends Controller
         if ($errors) return JsonResponse::ok(['error'=>'Invalid input','details'=>$errors],422);
         $title = trim($data['tieu_de']);
         $content = trim($data['noi_dung']);
-        $id = Blog::create($uid,$title,$content);
+        $status = $data['trang_thai'] ?? null;
+        $id = Blog::create($uid,$title,$content,$status);
         return JsonResponse::ok(['message'=>'Blog created','id_blog'=>$id],201);
     }
 
@@ -56,7 +47,21 @@ class BlogController extends Controller
         if ($errors) return JsonResponse::ok(['error'=>'Invalid input','details'=>$errors],422);
         $title = trim($data['tieu_de']);
         $content = trim($data['noi_dung']);
-        $ok = Blog::update($id,$title,$content);
+        $status = $data['trang_thai'] ?? null;
+        $ok = Blog::update($id,$title,$content,$status);
+        return JsonResponse::ok(['message'=>$ok?'Updated':'No changes']);
+    }
+
+    public function updateStatus(Request $req): Response
+    {
+        $id = (int)$req->getAttribute('id');
+        $data = $req->getParsedBody();
+        $status = $data['trang_thai'] ?? '';
+        $allowed = ['nhap','cong_bo','an'];
+        if (!in_array($status,$allowed,true)) {
+            return JsonResponse::ok(['error'=>'Invalid status'],422);
+        }
+        $ok = Blog::updateStatus($id,$status);
         return JsonResponse::ok(['message'=>$ok?'Updated':'No changes']);
     }
 }

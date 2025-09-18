@@ -16,6 +16,8 @@ use App\Http\Controllers\AdvertisingController;
 use App\Http\Controllers\CsrfController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\PoliciesController;
+use App\Http\Controllers\CommentController;
+use App\Http\Controllers\ContentController;
 use App\Http\Middleware\AuthMiddleware;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\ShopMiddleware;
@@ -51,10 +53,13 @@ $router->add('GET','/api/me/export',[UserController::class,'export'],[AuthMiddle
 // Policies
 $router->add('GET','/api/policies/terms',[PoliciesController::class,'terms']);
 $router->add('GET','/api/policies/privacy',[PoliciesController::class,'privacy']);
+$router->add('GET','/api/content/{slug}',[ContentController::class,'show']);
+$router->add('PUT','/api/content/{slug}',[ContentController::class,'update'],[AuthMiddleware::class, AdminMiddleware::class]);
 
 // Stores (cafes)
 $router->add('GET','/api/cafes',[CafeController::class,'index']);
 $router->add('GET','/api/cafes/search',[CafeController::class,'search']);
+$router->add('GET','/api/cafes/near',[CafeController::class,'nearby']);
 $router->add('GET','/api/cafes/{id}',[CafeController::class,'show']);
 $router->add('GET','/api/cafes/{id}/reviews',[ReviewController::class,'list']);
 $router->add('POST','/api/cafes/{id}/reviews',[ReviewController::class,'create'], [AuthMiddleware::class]);
@@ -68,17 +73,21 @@ $router->add('PATCH','/api/stores/{id}',[StoreController::class,'update'],[AuthM
 $router->add('POST','/api/stores/{id}/branches',[StoreController::class,'createBranch'],[AuthMiddleware::class, ShopMiddleware::class]);
 $router->add('GET','/api/me/stores',[StoreController::class,'myStores'],[AuthMiddleware::class]);
 $router->add('POST','/api/stores/{id}/images',[StoreController::class,'uploadImage'],[AuthMiddleware::class]);
+$router->add('GET','/api/stores/{id}/images',[StoreController::class,'images']);
+$router->add('GET','/api/me/stores/{id}/dashboard',[StoreController::class,'dashboard'],[AuthMiddleware::class]);
 
 // Vouchers
 $router->add('POST','/api/vouchers',[VoucherController::class,'create'],[AuthMiddleware::class, AdminOrShopMiddleware::class]);
 $router->add('POST','/api/vouchers/assign',[VoucherController::class,'assign'],[AuthMiddleware::class, AdminOrShopMiddleware::class]);
 $router->add('GET','/api/stores/{id}/vouchers',[VoucherController::class,'byStore']);
+$router->add('GET','/api/vouchers/global',[VoucherController::class,'global']);
 
 // Promotions
 $router->add('POST','/api/promotions',[PromotionController::class,'create'],[AuthMiddleware::class, AdminMiddleware::class]);
 $router->add('POST','/api/promotions/{id}/apply',[PromotionController::class,'applyStore'],[AuthMiddleware::class, ShopMiddleware::class]);
 $router->add('POST','/api/promotions/{id}/review',[PromotionController::class,'reviewApplication'],[AuthMiddleware::class, AdminMiddleware::class]);
 $router->add('GET','/api/stores/{id}/promotions',[PromotionController::class,'byStore']);
+$router->add('GET','/api/promotions/global',[PromotionController::class,'global']);
 
 // Blog
 $router->add('GET','/api/blog',[BlogController::class,'list']);
@@ -89,14 +98,26 @@ $router->add('PATCH','/api/blog/{id}',[BlogController::class,'update'],[AuthMidd
 $router->add('GET','/api/banners',[BannerController::class,'list']);
 $router->add('POST','/api/banners',[BannerController::class,'create'],[AuthMiddleware::class, AdminMiddleware::class]);
 $router->add('PATCH','/api/banners/{id}',[BannerController::class,'update'],[AuthMiddleware::class, AdminMiddleware::class]);
+$router->add('PATCH','/api/banners/reorder',[BannerController::class,'reorder'],[AuthMiddleware::class, AdminMiddleware::class]);
+$router->add('DELETE','/api/banners/{id}',[BannerController::class,'delete'],[AuthMiddleware::class, AdminMiddleware::class]);
 
 // Chat
 $router->add('POST','/api/chat/send',[ChatController::class,'send'],[AuthMiddleware::class]);
 $router->add('GET','/api/chat/messages',[ChatController::class,'messages'],[AuthMiddleware::class]);
 $router->add('GET','/api/chat/conversations',[ChatController::class,'conversations'],[AuthMiddleware::class]);
+$router->add('PATCH','/api/chat/read',[ChatController::class,'markRead'],[AuthMiddleware::class]);
+$router->add('GET','/api/chat/unread-counts',[ChatController::class,'unreadCounts'],[AuthMiddleware::class]);
+$router->add('POST','/api/chat/send-file',[ChatController::class,'sendFile'],[AuthMiddleware::class]);
 
 // Admin & Contact
 $router->add('GET','/api/admin/dashboard',[AdminController::class,'dashboard'],[AuthMiddleware::class, AdminMiddleware::class]);
+$router->add('GET','/api/admin/users',[AdminController::class,'listUsers'],[AuthMiddleware::class, AdminMiddleware::class]);
+$router->add('GET','/api/admin/search',[AdminController::class,'search'],[AuthMiddleware::class, AdminMiddleware::class]);
+$router->add('GET','/api/admin/reports/summary',[AdminController::class,'reportsSummary'],[AuthMiddleware::class, AdminMiddleware::class]);
+$router->add('PATCH','/api/admin/reviews/{id}',[ReviewController::class,'updateStatus'],[AuthMiddleware::class, AdminMiddleware::class]);
+$router->add('PATCH','/api/admin/blog/{id}/status',[BlogController::class,'updateStatus'],[AuthMiddleware::class, AdminMiddleware::class]);
+$router->add('GET','/api/admin/comments',[CommentController::class,'index'],[AuthMiddleware::class, AdminMiddleware::class]);
+$router->add('PATCH','/api/admin/comments/{id}',[CommentController::class,'update'],[AuthMiddleware::class, AdminMiddleware::class]);
 $router->add('POST','/api/admin/users/role',[AdminController::class,'setRole'],[AuthMiddleware::class, AdminMiddleware::class]);
 $router->add('DELETE','/api/admin/users/{id}',[AdminController::class,'deleteUser'],[AuthMiddleware::class, AdminMiddleware::class]);
 $router->add('GET','/api/admin/pending-stores',[AdminController::class,'pendingStores'],[AuthMiddleware::class, AdminMiddleware::class]);

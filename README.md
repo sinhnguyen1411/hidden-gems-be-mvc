@@ -49,6 +49,30 @@ Notes on caching
    - Metrics (Prometheus): `GET /metrics` (text/plain, v0.0.4)
    - API Docs (Swagger UI): open `http://127.0.0.1:8000/docs/`
 
+## Pending Feature Coverage
+
+### P1 - High Priority
+- **Near Me search**: enable finding cafes by user coordinates; endpoint GET /api/cafes/near (or extend GET /api/cafes with lat,lng,radius_km); middleware public GET (no auth); DB reuses existing vi_tri coordinates with optional bounding-box filter or index when data grows; response returns pagination metadata plus center and distance_km.
+- **Review moderation**: allow admin to toggle review visibility; endpoint PATCH /api/admin/reviews/{id} body {trang_thai:'hien'|'an'}; middleware AuthMiddleware and AdminMiddleware; DB adds danh_gia.trang_thai column (enum or tinyint) and optional index to surface pending items quickly.
+- **Global vouchers and promotions**: support vouchers and promotions without store mapping; endpoints POST /api/vouchers and GET /api/vouchers/global with is_global=1, GET /api/promotions/global, and extend promotion create to accept pham_vi_ap_dung='toan_he_thong'; middleware admin-only for create/update and public GET; DB adds voucher.is_global flag (default 0) and reuses existing promotion fields.
+- **Shop dashboard summary**: provide per-store aggregated metrics; endpoint GET /api/me/stores/{id}/dashboard; middleware AuthMiddleware plus store ownership guard; DB reuses reviews, promotions, vouchers, favorites, and view counters with an optional short-lived cache for aggregation.
+
+### P2 - Medium Priority
+- **Static content admin**: manage About and Testimonials pages; endpoints GET /api/content/about, GET /api/content/testimonials, plus PUT variants for admin updates; middleware public for GET and AdminMiddleware for PUT; content stored as markdown files using the PoliciesController pattern.
+- **Admin search**: provide review, promotion, and user search for moderation workflows; endpoint GET /api/admin/search?domain=reviews|promotions|users&q=&page=&per=; middleware AuthMiddleware and AdminMiddleware; DB reuses existing tables with optional caching for repeated queries.
+- **Banner maintenance**: support delete and drag-sort flows; endpoints DELETE /api/banners/{id} and PATCH /api/banners/reorder body {items:[{id,thu_tu}]}; middleware AuthMiddleware and AdminMiddleware; DB updates existing banner records using bulk order writes.
+
+### P3 - Backlog
+- **Chat read state and attachments**: mark conversations as read and report unread counts (plus optional file send); endpoints PATCH /api/chat/read body {with,up_to_id}, GET /api/chat/unread-counts, optional POST /api/chat/send-file multipart upload; middleware AuthMiddleware; DB reuses da_doc flag with new indexing for unread lookups.
+- **Blog moderation**: track blog post status; endpoint PATCH /api/admin/blog/{id}/status body {trang_thai:'draft'|'pending'|'published'|'hidden'}; middleware AuthMiddleware and AdminMiddleware; DB adds blog.trang_thai column and optional filter indexes.
+- **Admin reports export**: deliver CSV or JSON summaries; endpoint GET /api/admin/reports/summary?from=&to=&format=csv|json; middleware AuthMiddleware and AdminMiddleware; DB reuses analytics queries with CSV writer support.
+
+### Minimal Database Changes
+- Add danh_gia.trang_thai to store review visibility state (mapped to hien or an).
+- Add voucher.is_global tinyint(1) default 0 for site-wide vouchers.
+- Add blog.trang_thai to persist blog publication status.
+- Optional: introduce binh_luan table if the comment domain is enabled later, including moderation status and foreign keys.
+
 ## Directory Tree
 
 ```

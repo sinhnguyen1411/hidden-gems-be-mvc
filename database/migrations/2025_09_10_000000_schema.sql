@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS danh_gia (
   id_cua_hang INT NOT NULL,
   diem_danh_gia INT NOT NULL,
   binh_luan TEXT,
+  trang_thai VARCHAR(20) NOT NULL DEFAULT 'cho_duyet',
   thoi_gian_tao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_review_user  FOREIGN KEY (id_user) REFERENCES users(id_user) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT fk_review_store FOREIGN KEY (id_cua_hang) REFERENCES cua_hang(id_cua_hang) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -117,11 +118,24 @@ CREATE TABLE IF NOT EXISTS blog (
   id_user INT NOT NULL,
   tieu_de VARCHAR(255) NOT NULL,
   noi_dung TEXT,
+  trang_thai VARCHAR(20) NOT NULL DEFAULT 'nhap',
   thoi_gian_tao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_blog_user FOREIGN KEY (id_user) REFERENCES users(id_user) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
--- 10) PAYMENTS
+-- 10) COMMENTS
+CREATE TABLE IF NOT EXISTS binh_luan (
+  id_binh_luan INT PRIMARY KEY AUTO_INCREMENT,
+  id_user INT NOT NULL,
+  loai_doi_tuong VARCHAR(20) NOT NULL,
+  id_tham_chieu INT NOT NULL,
+  noi_dung TEXT NOT NULL,
+  trang_thai VARCHAR(20) NOT NULL DEFAULT 'cho_duyet',
+  thoi_gian_tao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_comment_user FOREIGN KEY (id_user) REFERENCES users(id_user) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+-- 11) PAYMENTS
 CREATE TABLE IF NOT EXISTS thanh_toan (
   id_thanh_toan INT PRIMARY KEY AUTO_INCREMENT,
   id_user INT NOT NULL,
@@ -132,7 +146,7 @@ CREATE TABLE IF NOT EXISTS thanh_toan (
   CONSTRAINT fk_payment_user FOREIGN KEY (id_user) REFERENCES users(id_user) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
--- 11) VOUCHERS
+-- 12) VOUCHERS
 CREATE TABLE IF NOT EXISTS voucher (
   id_voucher INT PRIMARY KEY AUTO_INCREMENT,
   ma_voucher VARCHAR(50) NOT NULL,
@@ -141,19 +155,20 @@ CREATE TABLE IF NOT EXISTS voucher (
   loai_giam_gia VARCHAR(20) NOT NULL,
   ngay_het_han DATETIME,
   so_luong_con_lai INT NOT NULL DEFAULT 0,
+  is_global TINYINT(1) NOT NULL DEFAULT 0,
   UNIQUE KEY uq_voucher_code (ma_voucher),
   CHECK (gia_tri_giam >= 0),
   CHECK (loai_giam_gia IN ('percent','amount'))
 ) ENGINE=InnoDB;
 
--- 12) INTERESTS
+-- 13) INTERESTS
 CREATE TABLE IF NOT EXISTS so_thich (
   id_so_thich INT PRIMARY KEY AUTO_INCREMENT,
   ten_so_thich VARCHAR(255) NOT NULL,
   UNIQUE KEY uq_interest_name (ten_so_thich)
 ) ENGINE=InnoDB;
 
--- 13) USER-INTEREST
+-- 14) USER-INTEREST
 CREATE TABLE IF NOT EXISTS nguoi_dung_so_thich (
   id_user INT NOT NULL,
   id_so_thich INT NOT NULL,
@@ -171,7 +186,7 @@ CREATE TABLE IF NOT EXISTS voucher_cua_hang (
   CONSTRAINT fk_vs_store   FOREIGN KEY (id_cua_hang) REFERENCES cua_hang(id_cua_hang) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
--- 15) PROMOTIONS
+-- 16) PROMOTIONS
 CREATE TABLE IF NOT EXISTS khuyen_mai (
   id_khuyen_mai INT PRIMARY KEY AUTO_INCREMENT,
   ten_chuong_trinh VARCHAR(255) NOT NULL,
@@ -184,7 +199,7 @@ CREATE TABLE IF NOT EXISTS khuyen_mai (
   CHECK (ngay_ket_thuc >= ngay_bat_dau)
 ) ENGINE=InnoDB;
 
--- 16) PROMOTION-STORE (with status + reviewer)
+-- 17) PROMOTION-STORE (with status + reviewer)
 CREATE TABLE IF NOT EXISTS khuyen_mai_cua_hang (
   id_khuyen_mai INT NOT NULL,
   id_cua_hang INT NOT NULL,
@@ -198,7 +213,7 @@ CREATE TABLE IF NOT EXISTS khuyen_mai_cua_hang (
   CONSTRAINT fk_ps_approver FOREIGN KEY (id_nguoi_duyet) REFERENCES users(id_user) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
--- 17) BANNERS
+-- 18) BANNERS
 CREATE TABLE IF NOT EXISTS banner (
   id_banner INT PRIMARY KEY AUTO_INCREMENT,
   tieu_de VARCHAR(255),
@@ -211,7 +226,7 @@ CREATE TABLE IF NOT EXISTS banner (
   thoi_gian_tao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
--- 18) MESSAGES (CHAT)
+-- 19) MESSAGES (CHAT)
 CREATE TABLE IF NOT EXISTS tin_nhan (
   id_tin_nhan INT PRIMARY KEY AUTO_INCREMENT,
   id_nguoi_gui INT NOT NULL,
@@ -223,7 +238,7 @@ CREATE TABLE IF NOT EXISTS tin_nhan (
   CONSTRAINT fk_msg_to   FOREIGN KEY (id_nguoi_nhan) REFERENCES users(id_user) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
--- 19) WALLET
+-- 20) WALLET
 CREATE TABLE IF NOT EXISTS vi_tien (
   id_user INT PRIMARY KEY,
   so_du DECIMAL(12,2) NOT NULL DEFAULT 0.00,
@@ -357,6 +372,7 @@ CREATE INDEX IF NOT EXISTS idx_image_store  ON hinh_anh(id_cua_hang);
 CREATE INDEX IF NOT EXISTS idx_vs_voucher ON voucher_cua_hang(id_voucher);
 CREATE INDEX IF NOT EXISTS idx_vs_store   ON voucher_cua_hang(id_cua_hang);
 CREATE INDEX IF NOT EXISTS idx_msg_pair_time ON tin_nhan(id_nguoi_gui, id_nguoi_nhan, thoi_gian_tao);
+CREATE INDEX IF NOT EXISTS idx_msg_recipient_read ON tin_nhan(id_nguoi_nhan, da_doc, id_tin_nhan);
 CREATE INDEX IF NOT EXISTS idx_banner_active ON banner(active, vi_tri);
 CREATE INDEX IF NOT EXISTS idx_wt_user_time ON giao_dich_vi(id_user, thoi_gian_tao);
 CREATE INDEX IF NOT EXISTS idx_ad_status_time ON yeu_cau_quang_cao(trang_thai, ngay_bat_dau);

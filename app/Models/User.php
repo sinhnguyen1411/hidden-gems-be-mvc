@@ -77,4 +77,40 @@ class User
         $stmt = DB::pdo()->prepare('DELETE FROM users WHERE id_user=?');
         return $stmt->execute([$id]);
     }
+
+    public static function search(array $filters, int $page=1, int $per=20): array
+    {
+        $page = max(1,$page);
+        $per = max(1,$per);
+        $offset = ($page-1)*$per;
+        $where = [];
+        $params = [];
+        if (!empty($filters['q'])) {
+            $where[] = '(username LIKE ? OR email LIKE ? OR full_name LIKE ? OR phone_number LIKE ?)';
+            $like = '%'.$filters['q'].'%';
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
+        }
+        if (!empty($filters['role'])) {
+            $where[] = 'role = ?';
+            $params[] = $filters['role'];
+        }
+        $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+        $countStmt = DB::pdo()->prepare('SELECT COUNT(*) FROM users ' . $whereSql);
+        $countStmt->execute($params);
+        $total = (int)$countStmt->fetchColumn();
+        $sql = 'SELECT id_user, username, email, full_name, role, phone_number, joined_at FROM users ' . $whereSql . ' ORDER BY id_user DESC LIMIT ? OFFSET ?';
+        $stmt = DB::pdo()->prepare($sql);
+        $i = 1;
+        foreach ($params as $param) {
+            $stmt->bindValue($i++,$param,\PDO::PARAM_STR);
+        }
+        $stmt->bindValue($i++,$per,\PDO::PARAM_INT);
+        $stmt->bindValue($i,$offset,\PDO::PARAM_INT);
+        $stmt->execute();
+        $items = $stmt->fetchAll();
+        return ['items'=>$items,'total'=>$total,'page'=>$page,'per_page'=>$per];
+    }
 }

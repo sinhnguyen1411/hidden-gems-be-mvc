@@ -39,6 +39,12 @@ class Promotion
 
     public static function applyStore(int $promoId, int $storeId): bool
     {
+        $scopeStmt = DB::pdo()->prepare('SELECT pham_vi_ap_dung FROM khuyen_mai WHERE id_khuyen_mai=?');
+        $scopeStmt->execute([$promoId]);
+        $scope = $scopeStmt->fetchColumn();
+        if ($scope === 'toan_he_thong') {
+            return false;
+        }
         $stmt = DB::pdo()->prepare('INSERT INTO khuyen_mai_cua_hang(id_khuyen_mai,id_cua_hang,trang_thai) VALUES (?,?,?)');
         return $stmt->execute([$promoId,$storeId,'cho_duyet']);
     }
@@ -51,9 +57,58 @@ class Promotion
 
     public static function listByStore(int $storeId): array
     {
-        $stmt = DB::pdo()->prepare('SELECT k.*, ks.trang_thai FROM khuyen_mai k JOIN khuyen_mai_cua_hang ks ON ks.id_khuyen_mai=k.id_khuyen_mai WHERE ks.id_cua_hang=? ORDER BY k.id_khuyen_mai DESC');
+        $sql = 'SELECT k.*, ks.trang_thai FROM khuyen_mai k
+                LEFT JOIN khuyen_mai_cua_hang ks ON ks.id_khuyen_mai=k.id_khuyen_mai AND ks.id_cua_hang=?
+                WHERE k.pham_vi_ap_dung = \'toan_he_thong\' OR ks.id_cua_hang IS NOT NULL
+                ORDER BY k.id_khuyen_mai DESC';
+        $stmt = DB::pdo()->prepare($sql);
         $stmt->execute([$storeId]);
         return $stmt->fetchAll();
     }
-}
 
+    public static function listGlobal(string $status='dang_hoat_dong'): array
+    {
+        $sql = 'SELECT * FROM khuyen_mai WHERE pham_vi_ap_dung=\'toan_he_thong\'';
+        $params = [];
+        if ($status !== '') {
+            $sql .= ' AND trang_thai = ?';
+            $params[] = $status;
+        }
+        $sql .= ' ORDER BY ngay_bat_dau DESC';
+        $stmt = DB::pdo()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    public static function searchAdmin(string $term='', ?string $status=null, int $page=1, int $per=20): array
+    {
+        $offset = ($page-1)*$per;
+        $where = [];
+        $params = [];
+        if ($term !== '') {
+            $where[] = '(ten_chuong_trinh LIKE ? OR mo_ta LIKE ?)';
+            $like = '%'.$term.'%';
+            $params[] = $like;
+            $params[] = $like;
+        }
+        if ($status !== null && $status !== '') {
+            $where[] = 'trang_thai = ?';
+            $params[] = $status;
+        }
+        $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+        $countStmt = DB::pdo()->prepare('SELECT COUNT(*) FROM khuyen_mai ' . $whereSql);
+        $countStmt->execute($params);
+        $total = (int)$countStmt->fetchColumn();
+        $sql = 'SELECT * FROM khuyen_mai ' . $whereSql . ' ORDER BY id_khuyen_mai DESC LIMIT ? OFFSET ?';
+        $stmt = DB::pdo()->prepare($sql);
+        $i = 1;
+        foreach ($params as $param) {
+            $stmt->bindValue($i++,$param,\PDO::PARAM_STR);
+        }
+        $stmt->bindValue($i++,$per,\PDO::PARAM_INT);
+        $stmt->bindValue($i,$offset,\PDO::PARAM_INT);
+        $stmt->execute();
+        $items = $stmt->fetchAll();
+        return ['items'=>$items,'total'=>$total,'page'=>$page,'per_page'=>$per];
+    }
+}

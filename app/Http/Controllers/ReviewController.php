@@ -32,4 +32,19 @@ class ReviewController extends Controller
         $id = Review::create($userId,$cafeId,$rating,$content);
         return JsonResponse::ok(['message'=>'Created','review_id'=>$id],201);
     }
+
+    public function updateStatus(Request $req): Response
+    {
+        $id = (int)$req->getAttribute('id');
+        $body = $req->getParsedBody();
+        $status = $body['trang_thai'] ?? '';
+        $allowed = ['cho_duyet','da_duyet','tu_choi','an'];
+        if (!in_array($status,$allowed,true)) {
+            return JsonResponse::ok(['error'=>'Invalid status'],422);
+        }
+        $user = $req->getAttribute('user', []);
+        $moderatorId = (int)($user['uid'] ?? 0);
+        $ok = Review::updateStatus($id,$status,$moderatorId);
+        return JsonResponse::ok(['message'=>$ok?'Updated':'No changes']);
+    }
 }

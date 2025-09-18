@@ -5,6 +5,7 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Core\JsonResponse;
 use App\Core\Validator;
+use App\Core\Cache;
 use App\Models\Promotion;
 
 class PromotionController extends Controller
@@ -49,6 +50,18 @@ class PromotionController extends Controller
     {
         $storeId = (int)$req->getAttribute('id');
         $rows = Promotion::listByStore($storeId);
+        return JsonResponse::ok(['data'=>$rows]);
+    }
+
+    public function global(Request $req): Response
+    {
+        $query = $req->getQueryParams();
+        $status = $query['trang_thai'] ?? 'dang_hoat_dong';
+        $ttl = (int)($_ENV['PROMOTIONS_GLOBAL_CACHE_TTL'] ?? 60);
+        $cacheKey = 'promotions:global:'.$status;
+        $rows = Cache::remember($cacheKey,$ttl,function() use ($status){
+            return Promotion::listGlobal($status);
+        });
         return JsonResponse::ok(['data'=>$rows]);
     }
 }
