@@ -6,6 +6,7 @@ use App\Core\Response;
 use App\Core\JsonResponse;
 use App\Core\Storage;
 use App\Models\Message;
+use App\Models\MediaUpload;
 
 class ChatController extends Controller
 {
@@ -98,6 +99,14 @@ class ChatController extends Controller
             return JsonResponse::ok(['error'=>'Upload failed'],500);
         }
         $caption = trim($data['caption'] ?? '');
+        try {
+            MediaUpload::record($from ?: null, 'chat_attachment', $saved, [
+                'size' => (int)($file['size'] ?? 0),
+                'meta' => ['to_user_id' => $to, 'caption' => $caption],
+            ]);
+        } catch (\Throwable $logErr) {
+            // ignore logging errors for chat attachments
+        }
         $payload = [
             'url' => $saved['url'],
             'filename' => $saved['filename'],

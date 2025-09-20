@@ -5,6 +5,7 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Core\JsonResponse;
 use App\Core\Storage;
+use App\Models\MediaUpload;
 use App\Models\Banner;
 
 class BannerController extends Controller
@@ -24,6 +25,9 @@ class BannerController extends Controller
 
     public function create(Request $req): Response
     {
+        $user = $req->getAttribute('user', []);
+        $uploaderId = (int)($user['uid'] ?? 0) ?: null;
+
         $data = $req->getParsedBody();
         $title = $data['tieu_de'] ?? '';
         $desc = $data['mo_ta'] ?? null;
@@ -37,6 +41,21 @@ class BannerController extends Controller
         if (!$imageUrl && isset($files['file'])) {
             $saved = Storage::saveUploadedFile($files['file'], 'banners');
             $imageUrl = $saved['url'];
+            try {
+                $meta = ['action' => 'create'];
+                if ($title !== '') {
+                    $meta['title'] = $title;
+                }
+                if ($link) {
+                    $meta['link_url'] = $link;
+                }
+                MediaUpload::record($uploaderId, 'banner', $saved, [
+                    'size' => (int)($files['file']['size'] ?? 0),
+                    'meta' => $meta,
+                ]);
+            } catch (\Throwable $e) {
+                // ignore logging errors
+            }
         }
         if (!$imageUrl) return JsonResponse::ok(['error'=>'Image required'],422);
 
@@ -47,6 +66,9 @@ class BannerController extends Controller
 
     public function update(Request $req): Response
     {
+        $user = $req->getAttribute('user', []);
+        $uploaderId = (int)($user['uid'] ?? 0) ?: null;
+
         $id = (int)$req->getAttribute('id');
         $data = $req->getParsedBody();
         $fields = [];
@@ -57,6 +79,14 @@ class BannerController extends Controller
         if (isset($files['file'])) {
             $saved = Storage::saveUploadedFile($files['file'], 'banners');
             $fields['url_anh'] = $saved['url'];
+            try {
+                MediaUpload::record($uploaderId, 'banner', $saved, [
+                    'size' => (int)($files['file']['size'] ?? 0),
+                    'meta' => ['action' => 'update', 'banner_id' => $id],
+                ]);
+            } catch (\Throwable $e) {
+                // ignore logging failures
+            }
         }
         $ok = $fields ? Banner::update($id,$fields) : false;
         if ($ok) {

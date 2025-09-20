@@ -286,6 +286,37 @@ foreach ($banners as $b) {
     if (!$chk->fetch()) $pdo->prepare("INSERT INTO banner(tieu_de,mo_ta,url_anh,link_url,vi_tri,thu_tu,active) VALUES (?,?,?,?,?,?,?)")->execute($b);
 }
 
+// Media uploads audit seeds
+$mediaSamples = [
+    ['uploader' => $adminId, 'context' => 'banner', 'url' => 'https://picsum.photos/seed/banner1/1200/300', 'meta' => ['seed' => true, 'placement' => 'home_top']],
+    ['uploader' => $adminId, 'context' => 'banner', 'url' => 'https://picsum.photos/seed/banner5/1200/300', 'meta' => ['seed' => true, 'placement' => 'home_mid']],
+    ['uploader' => $ownerIdHue ?: $adminId, 'context' => 'store_image', 'url' => 'https://picsum.photos/seed/gemhue/800/450', 'meta' => ['seed' => true, 'store_id' => $storeHue ?? null]],
+    ['uploader' => $ownerIdDaLat ?: $ownerId5 ?: $adminId, 'context' => 'store_image', 'url' => 'https://picsum.photos/seed/gemdl/800/450', 'meta' => ['seed' => true, 'store_id' => $storeDL ?? null]],
+    ['uploader' => $ownerId1 ?: $adminId, 'context' => 'chat_attachment', 'url' => 'https://picsum.photos/seed/chatdemo/600/400', 'meta' => ['seed' => true, 'note' => 'demo attachment']],
+];
+$mediaCheck = $pdo->prepare('SELECT id_media_upload FROM media_upload WHERE url=? LIMIT 1');
+$mediaInsert = $pdo->prepare('INSERT INTO media_upload(uploader_id, context, url, path, filename, original_name, size_bytes, meta) VALUES (?,?,?,?,?,?,?,?)');
+foreach ($mediaSamples as $media) {
+    if (empty($media['url'])) {
+        continue;
+    }
+    $mediaCheck->execute([$media['url']]);
+    if ($mediaCheck->fetch()) {
+        continue;
+    }
+    $metaJson = isset($media['meta']) ? json_encode($media['meta'], JSON_UNESCAPED_UNICODE) : null;
+    $mediaInsert->execute([
+        $media['uploader'] ?: null,
+        $media['context'],
+        $media['url'],
+        $media['path'] ?? null,
+        $media['filename'] ?? null,
+        $media['original'] ?? null,
+        $media['size'] ?? null,
+        $metaJson,
+    ]);
+}
+
 // Chat messages
 $messages = [
     [$getUserId('alice@example.com'), $getUserId('shop@example.com'), 'Chao ban, quan con mo cua khong?', 0],

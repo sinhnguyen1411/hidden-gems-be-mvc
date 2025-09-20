@@ -350,7 +350,25 @@ CREATE TABLE IF NOT EXISTS audit_log (
   INDEX idx_al_action_time (action, created_at)
 ) ENGINE=InnoDB;
 
--- 22) USER CONSENT
+-- 22) MEDIA UPLOADS
+CREATE TABLE IF NOT EXISTS media_upload (
+  id_media_upload INT PRIMARY KEY AUTO_INCREMENT,
+  uploader_id INT NULL,
+  context VARCHAR(50) NOT NULL,
+  url TEXT NOT NULL,
+  path TEXT NULL,
+  filename VARCHAR(255) NULL,
+  original_name VARCHAR(255) NULL,
+  size_bytes INT NULL,
+  meta TEXT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_media_uploader FOREIGN KEY (uploader_id) REFERENCES users(id_user)
+    ON DELETE SET NULL ON UPDATE CASCADE,
+  KEY idx_media_context (context, created_at),
+  KEY idx_media_uploader (uploader_id, created_at)
+) ENGINE=InnoDB;
+
+-- 23) USER CONSENT
 CREATE TABLE IF NOT EXISTS user_consent (
   id INT PRIMARY KEY AUTO_INCREMENT,
   id_user INT NOT NULL,

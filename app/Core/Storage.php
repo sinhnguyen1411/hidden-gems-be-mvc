@@ -93,7 +93,7 @@ class Storage
             $rel = '/uploads' . ($subdir ? '/' . trim($subdir, '/\\') : '') . '/' . $filename;
             $url = $urlBase ? ($urlBase . $rel) : $rel;
         }
-        return ['path' => $dest, 'url' => $url, 'filename' => $filename, 'original' => $original];
+        return ['path' => $dest, 'url' => $url, 'filename' => $filename, 'original' => $original, 'size' => $size, 'subdir' => $subdir];
     }
 
     public static function saveBase64(string $base64, string $prefix = 'img', ?string $subdir = null): array
@@ -139,7 +139,7 @@ class Storage
             $rel = '/uploads' . ($subdir ? '/' . trim($subdir, '/\\') : '') . '/' . $filename;
             $url = $urlBase ? ($urlBase . $rel) : $rel;
         }
-        return ['path' => $dest, 'url' => $url, 'filename' => $filename];
+        return ['path' => $dest, 'url' => $url, 'filename' => $filename, 'size' => $size, 'subdir' => $subdir];
     }
 
     private static function mimeToExt(string $mime): string

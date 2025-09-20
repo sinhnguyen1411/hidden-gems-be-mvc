@@ -8,6 +8,7 @@ use App\Core\Validator;
 use App\Core\Cache;
 use App\Models\Cafe;
 use App\Models\Image;
+use App\Models\MediaUpload;
 
 class StoreController extends Controller
 {
@@ -99,6 +100,14 @@ class StoreController extends Controller
         }
         try {
             $saved = \App\Core\Storage::saveUploadedFile($files['file'], 'stores');
+            try {
+                MediaUpload::record($uid ?: null, 'store_image', $saved, [
+                    'size' => (int)($files['file']['size'] ?? 0),
+                    'meta' => ['store_id' => $storeId],
+                ]);
+            } catch (\Throwable $logErr) {
+                // ignore logging issues
+            }
         } catch (\Throwable $e) {
             return JsonResponse::ok(['error'=>'Upload failed'],500);
         }
